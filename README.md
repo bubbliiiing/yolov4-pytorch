@@ -31,7 +31,7 @@ keras==2.1.5
 
 ### 文件下载
 训练所需的yolo4_weights.pth可在百度网盘中下载。  
-链接: https://pan.baidu.com/s/1VNSYi39AaqjHVbdNpW_7sw 提取码: q2iv
+链接: https://pan.baidu.com/s/1VNSYi39AaqjHVbdNpW_7sw 提取码: q2iv  
 yolo4_weights.h5是coco数据集的权重。  
 yolo4_voc_weights.h5是voc数据集的权重。
 
