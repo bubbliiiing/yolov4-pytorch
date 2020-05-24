@@ -40,7 +40,7 @@ def fit_ont_epoch(net,yolo_losses,epoch,epoch_size,epoch_size_val,gen,genval,Epo
         with torch.no_grad():
             if cuda:
                 images = Variable(torch.from_numpy(images).type(torch.FloatTensor)).cuda()
-                targets = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)).cuda() for ann in targets]
+                targets = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)) for ann in targets]
             else:
                 images = Variable(torch.from_numpy(images).type(torch.FloatTensor))
                 targets = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)) for ann in targets]
@@ -67,7 +67,7 @@ def fit_ont_epoch(net,yolo_losses,epoch,epoch_size,epoch_size_val,gen,genval,Epo
         with torch.no_grad():
             if cuda:
                 images_val = Variable(torch.from_numpy(images_val).type(torch.FloatTensor)).cuda()
-                targets_val = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)).cuda() for ann in targets_val]
+                targets_val = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)) for ann in targets_val]
             else:
                 images_val = Variable(torch.from_numpy(images_val).type(torch.FloatTensor))
                 targets_val = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)) for ann in targets_val]
@@ -85,6 +85,7 @@ def fit_ont_epoch(net,yolo_losses,epoch,epoch_size,epoch_size_val,gen,genval,Epo
 
     print('Saving state, iter:', str(epoch+1))
     torch.save(model.state_dict(), 'logs/Epoch%d-Total_Loss%.4f-Val_Loss%.4f.pth'%((epoch+1),total_loss/(epoch_size+1),val_loss/(epoch_size_val+1)))
+
 
 
 if __name__ == "__main__":
