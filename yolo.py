@@ -62,15 +62,17 @@ class YOLO(object):
     #   获得所有的分类
     #---------------------------------------------------#
     def generate(self):
-        os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+        
         self.net = YoloBody(len(self.anchors[0]),len(self.class_names)).eval()
 
         # 加快模型训练的效率
         print('Loading weights into state dict...')
         state_dict = torch.load(self.model_path)
         self.net.load_state_dict(state_dict)
-        self.net = nn.DataParallel(self.net)
+        
         if self.cuda:
+            os.environ["CUDA_VISIBLE_DEVICES"] = '0'
+            self.net = nn.DataParallel(self.net)
             self.net = self.net.cuda()
     
         print('Finished!')
