@@ -40,7 +40,7 @@ def fit_ont_epoch(net,yolo_losses,epoch,epoch_size,epoch_size_val,gen,genval,Epo
         with torch.no_grad():
             if cuda:
                 images = Variable(torch.from_numpy(images).type(torch.FloatTensor)).cuda()
-                targets = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)) for ann in targets]
+                targets = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)).cuda() for ann in targets]
             else:
                 images = Variable(torch.from_numpy(images).type(torch.FloatTensor))
                 targets = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)) for ann in targets]
@@ -66,11 +66,11 @@ def fit_ont_epoch(net,yolo_losses,epoch,epoch_size,epoch_size_val,gen,genval,Epo
 
         with torch.no_grad():
             if cuda:
-                images = Variable(torch.from_numpy(images).cuda().type(torch.FloatTensor))
-                targets = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)) for ann in targets]
+                images_val = Variable(torch.from_numpy(images_val).type(torch.FloatTensor)).cuda()
+                targets_val = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)).cuda() for ann in targets_val]
             else:
-                images = Variable(torch.from_numpy(images).type(torch.FloatTensor))
-                targets = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)) for ann in targets]
+                images_val = Variable(torch.from_numpy(images_val).type(torch.FloatTensor))
+                targets_val = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)) for ann in targets_val]
             optimizer.zero_grad()
             outputs = net(images_val)
             losses = []
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         Init_Epoch = 0
         Freeze_Epoch = 25
         
-        optimizer = optim.Adam(net.parameters(),lr)
+        optimizer = optim.Adam(net.parameters(),lr,weight_decay=5e-4)
         if Cosine_lr:
             lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5, eta_min=1e-5)
         else:
@@ -183,7 +183,7 @@ if __name__ == "__main__":
         Freeze_Epoch = 25
         Unfreeze_Epoch = 50
 
-        optimizer = optim.Adam(net.parameters(),lr)
+        optimizer = optim.Adam(net.parameters(),lr,weight_decay=5e-4)
         if Cosine_lr:
             lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5, eta_min=1e-5)
         else:
