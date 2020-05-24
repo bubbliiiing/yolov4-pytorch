@@ -39,9 +39,8 @@ class mAP_Yolo(YOLO):
             images = torch.from_numpy(images)
             if self.cuda:
                 images = images.cuda()
-                
+            outputs = self.net(images)
             
-        outputs = self.net(images)
         output_list = []
         for i in range(3):
             output_list.append(self.yolo_decodes[i](outputs[i]))
