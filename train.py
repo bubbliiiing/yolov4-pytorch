@@ -159,7 +159,7 @@ if __name__ == "__main__":
         if Cosine_lr:
             lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5, eta_min=1e-5)
         else:
-            lr_scheduler = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.95)
+            lr_scheduler = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.9)
 
         gen = Generator(Batch_size, lines[:num_train],
                         (input_shape[0], input_shape[1])).generate(mosaic = mosaic)
@@ -188,7 +188,7 @@ if __name__ == "__main__":
         if Cosine_lr:
             lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5, eta_min=1e-5)
         else:
-            lr_scheduler = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.95)
+            lr_scheduler = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.9)
 
         gen = Generator(Batch_size, lines[:num_train],
                         (input_shape[0], input_shape[1])).generate(mosaic = mosaic)
