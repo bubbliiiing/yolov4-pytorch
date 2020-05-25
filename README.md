@@ -17,7 +17,7 @@
 - [ ] ……balabla
 
 ### 所需环境
-torch=1.2.0
+torch==1.2.0
 
 ### 注意事项
 代码中的yolo4_weights.pth是基于608x608的图片训练的，但是由于显存原因。我将代码中的图片大小修改成了416x416。有需要的可以修改回来。 代码中的默认anchors是基于608x608的图片的。   
@@ -31,8 +31,8 @@ torch=1.2.0
 ### 文件下载
 训练所需的yolo4_weights.pth可在百度网盘中下载。  
 链接: https://pan.baidu.com/s/1VNSYi39AaqjHVbdNpW_7sw 提取码: q2iv  
-yolo4_weights.h5是coco数据集的权重。  
-yolo4_voc_weights.h5是voc数据集的权重。
+yolo4_weights.pth是coco数据集的权重。  
+yolo4_voc_weights.pth是voc数据集的权重。
 
 ### 训练步骤
 1、本文使用VOC格式进行训练。  
