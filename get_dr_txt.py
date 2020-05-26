@@ -4,7 +4,6 @@
 #       Bubbliiiing
 #-------------------------------------#
 import cv2
-import keras
 import numpy as np
 import colorsys
 import os
