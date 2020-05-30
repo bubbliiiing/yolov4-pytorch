@@ -418,7 +418,7 @@ class Generator(object):
             dy = place_y[index]
             new_image = Image.new('RGB', (w,h), (128,128,128))
             new_image.paste(image, (dx, dy))
-            image_data = np.array(new_image)/255
+            image_data = np.array(new_image)
 
             
             index = index + 1
