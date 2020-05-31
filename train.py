@@ -166,7 +166,7 @@ if __name__ == "__main__":
         gen_val = Generator(Batch_size, lines[num_train:],
                         (input_shape[0], input_shape[1])).generate(mosaic = False)
                         
-        epoch_size = int(max(1, num_train//Batch_size//2.5)) if mosaic else max(1, num_train//Batch_size)
+        epoch_size = max(1, num_train//Batch_size)
         epoch_size_val = num_val//Batch_size
         #------------------------------------#
         #   冻结一定部分训练
@@ -195,7 +195,7 @@ if __name__ == "__main__":
         gen_val = Generator(Batch_size, lines[num_train:],
                         (input_shape[0], input_shape[1])).generate(mosaic = False)
                         
-        epoch_size = int(max(1, num_train//Batch_size//2.5)) if mosaic else max(1, num_train//Batch_size)
+        epoch_size = max(1, num_train//Batch_size)
         epoch_size_val = num_val//Batch_size
         #------------------------------------#
         #   解冻后训练
