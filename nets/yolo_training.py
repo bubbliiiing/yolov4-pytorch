@@ -472,7 +472,7 @@ class Generator(object):
                 if mosaic == True:
                     if flag and (i+4) < n:
                         img,y = self.get_random_data_with_Mosaic(lines[i:i+4], self.image_size[0:2])
-                        i = (i+4) % n
+                        i = (i+1) % n
                     else:
                         img,y = self.get_random_data(lines[i], self.image_size[0:2])
                         i = (i+1) % n
