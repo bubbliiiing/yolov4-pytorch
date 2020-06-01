@@ -38,7 +38,7 @@ yolo4_voc_weights.pth是voc数据集的权重。
 1、本文使用VOC格式进行训练。  
 2、训练前将标签文件放在VOCdevkit文件夹下的VOC2007文件夹下的Annotation中。  
 3、训练前将图片文件放在VOCdevkit文件夹下的VOC2007文件夹下的JPEGImages中。  
-4、在训练前利用voc2yolo3.py文件生成对应的txt。  
+4、在训练前利用voc2yolo4.py文件生成对应的txt。  
 5、再运行根目录下的voc_annotation.py，运行前需要将classes改成你自己的classes。  
 ```python
 classes = ["aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat", "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"]
