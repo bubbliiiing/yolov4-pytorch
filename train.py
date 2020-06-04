@@ -122,8 +122,9 @@ if __name__ == "__main__":
     model_path = "model_data/yolo4_weights.pth"
     # 加快模型训练的效率
     print('Loading weights into state dict...')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model_dict = model.state_dict()
-    pretrained_dict = torch.load(model_path)
+    pretrained_dict = torch.load(model_path, map_location=device)
     pretrained_dict = {k: v for k, v in pretrained_dict.items() if np.shape(model_dict[k]) ==  np.shape(v)}
     model_dict.update(pretrained_dict)
     model.load_state_dict(model_dict)
