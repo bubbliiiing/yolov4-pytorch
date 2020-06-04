@@ -497,8 +497,8 @@ class Generator(object):
                     
                 img = np.array(img,dtype = np.float32)
 
-                inputs.append(np.transpose(img/255.0,(2,0,1)))                
-                targets.append(np.array(y))
+                inputs.append(np.transpose(img/255.0,(2,0,1)))              
+                targets.append(np.array(y,dtype = np.float32))
                 if len(targets) == self.batch_size:
                     tmp_inp = np.array(inputs)
                     tmp_targets = np.array(targets)
