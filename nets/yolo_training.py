@@ -472,7 +472,7 @@ class Generator(object):
                 if mosaic == True:
                     if flag and (i+4) < n:
                         img,y = self.get_random_data_with_Mosaic(lines[i:i+4], self.image_size[0:2])
-                        i = (i+1) % n
+                        i = (i+4) % n
                     else:
                         img,y = self.get_random_data(lines[i], self.image_size[0:2])
                         i = (i+1) % n
@@ -480,21 +480,21 @@ class Generator(object):
                 else:
                     img,y = self.get_random_data(lines[i], self.image_size[0:2])
                     i = (i+1) % n
-                if len(y)==0:
-                    continue
-                boxes = np.array(y[:,:4],dtype=np.float32)
-                boxes[:,0] = boxes[:,0]/self.image_size[1]
-                boxes[:,1] = boxes[:,1]/self.image_size[0]
-                boxes[:,2] = boxes[:,2]/self.image_size[1]
-                boxes[:,3] = boxes[:,3]/self.image_size[0]
+                if len(y)!=0:
+                    boxes = np.array(y[:,:4],dtype=np.float32)
+                    boxes[:,0] = boxes[:,0]/self.image_size[1]
+                    boxes[:,1] = boxes[:,1]/self.image_size[0]
+                    boxes[:,2] = boxes[:,2]/self.image_size[1]
+                    boxes[:,3] = boxes[:,3]/self.image_size[0]
 
-                boxes = np.maximum(np.minimum(boxes,1),0)
-                boxes[:,2] = boxes[:,2] - boxes[:,0]
-                boxes[:,3] = boxes[:,3] - boxes[:,1]
-  
-                boxes[:,0] = boxes[:,0] + boxes[:,2]/2
-                boxes[:,1] = boxes[:,1] + boxes[:,3]/2
-                y = np.concatenate([boxes,y[:,-1:]],axis=-1)
+                    boxes = np.maximum(np.minimum(boxes,1),0)
+                    boxes[:,2] = boxes[:,2] - boxes[:,0]
+                    boxes[:,3] = boxes[:,3] - boxes[:,1]
+    
+                    boxes[:,0] = boxes[:,0] + boxes[:,2]/2
+                    boxes[:,1] = boxes[:,1] + boxes[:,3]/2
+                    y = np.concatenate([boxes,y[:,-1:]],axis=-1)
+                    
                 img = np.array(img,dtype = np.float32)
 
                 inputs.append(np.transpose(img/255.0,(2,0,1)))                
