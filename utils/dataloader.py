@@ -213,6 +213,7 @@ class YoloDataset(Dataset):
                 img, y = self.get_random_data_with_Mosaic(lines[index:index + 4], self.image_size[0:2])
             else:
                 img, y = self.get_random_data(lines[index], self.image_size[0:2])
+            self.flag = bool(1-self.flag)
         else:
             img, y = self.get_random_data(lines[index], self.image_size[0:2])
 
