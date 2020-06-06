@@ -207,6 +207,7 @@ class YoloDataset(Dataset):
             shuffle(self.train_lines)
         lines = self.train_lines
         n = self.train_batches
+        index = index % n
         if self.mosaic:
             if self.flag and (index + 4) < n:
                 img, y = self.get_random_data_with_Mosaic(lines[index:index + 4], self.image_size[0:2])
