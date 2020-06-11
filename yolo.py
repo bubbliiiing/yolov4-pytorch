@@ -13,6 +13,10 @@ from PIL import Image,ImageFont, ImageDraw
 from torch.autograd import Variable
 from utils.utils import non_max_suppression, bbox_iou, DecodeBox,letterbox_image,yolo_correct_boxes
 
+#--------------------------------------------#
+#   使用自己训练好的模型预测需要修改2个参数
+#   model_path和classes_path都需要修改！
+#--------------------------------------------#
 class YOLO(object):
     _defaults = {
         "model_path": 'model_data/yolo4_weights.pth',
