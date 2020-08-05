@@ -33,7 +33,7 @@ while(True):
     cv2.imshow("video",frame)
 
 
-    c= cv2.waitKey(30) & 0xff 
+    c= cv2.waitKey(1) & 0xff 
     if c==27:
         capture.release()
         break
