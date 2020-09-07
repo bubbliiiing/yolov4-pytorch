@@ -39,7 +39,7 @@ class YoloDataset(Dataset):
 
         # 调整图片大小
         new_ar = w / h * self.rand(1 - jitter, 1 + jitter) / self.rand(1 - jitter, 1 + jitter)
-        scale = self.rand(.25, 2)
+        scale = self.rand(.5, 1.5)
         if new_ar < 1:
             nh = int(scale * h)
             nw = int(nh * new_ar)
