@@ -164,7 +164,6 @@ def yolo_correct_boxes(top, left, bottom, right, input_shape, image_shape):
         box_maxes[:, 0:1],
         box_maxes[:, 1:2]
     ],axis=-1)
-    print(np.shape(boxes))
     boxes *= np.concatenate([image_shape, image_shape],axis=-1)
     return boxes
 
