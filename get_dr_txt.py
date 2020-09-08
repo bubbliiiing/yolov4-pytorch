@@ -15,7 +15,7 @@ from yolo import YOLO
 from nets.yolo4 import YoloBody
 from PIL import Image,ImageFont, ImageDraw
 from utils.utils import non_max_suppression, bbox_iou, DecodeBox,letterbox_image,yolo_correct_boxes
-
+from tqdm import tqdm
 class mAP_Yolo(YOLO):
     #---------------------------------------------------#
     #   检测图片
@@ -83,13 +83,11 @@ if not os.path.exists("./input/images-optional"):
     os.makedirs("./input/images-optional")
 
 
-for image_id in image_ids:
+for image_id in tqdm(image_ids):
     image_path = "./VOCdevkit/VOC2007/JPEGImages/"+image_id+".jpg"
     image = Image.open(image_path)
     # 开启后在之后计算mAP可以可视化
     # image.save("./input/images-optional/"+image_id+".jpg")
     yolo.detect_image(image_id,image)
-    print(image_id," done!")
     
-
 print("Conversion completed!")
