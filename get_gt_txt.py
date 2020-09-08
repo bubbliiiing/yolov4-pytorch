@@ -7,6 +7,7 @@ import sys
 import os
 import glob
 import xml.etree.ElementTree as ET
+from tqdm import tqdm
 
 image_ids = open('VOCdevkit/VOC2007/ImageSets/Main/test.txt').read().strip().split()
 
@@ -15,7 +16,7 @@ if not os.path.exists("./input"):
 if not os.path.exists("./input/ground-truth"):
     os.makedirs("./input/ground-truth")
 
-for image_id in image_ids:
+for image_id in tqdm(image_ids):
     with open("./input/ground-truth/"+image_id+".txt", "w") as new_f:
         root = ET.parse("VOCdevkit/VOC2007/Annotations/"+image_id+".xml").getroot()
         for obj in root.findall('object'):
