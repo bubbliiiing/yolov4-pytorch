@@ -529,7 +529,6 @@ class Generator(object):
                 targets.append(np.array(y,dtype = np.float32))
                 if len(targets) == self.batch_size:
                     tmp_inp = np.array(inputs)
-                    tmp_targets = np.array(targets)
                     inputs = []
                     targets = []
                     yield tmp_inp, tmp_targets
