@@ -46,7 +46,7 @@ class mAP_Yolo(YOLO):
         output = torch.cat(output_list, 1)
         batch_detections = non_max_suppression(output, len(self.class_names),
                                                 conf_thres=self.confidence,
-                                                nms_thres=0.3)
+                                                nms_thres=self.iou)
 
         try:
             batch_detections = batch_detections[0].cpu().numpy()
