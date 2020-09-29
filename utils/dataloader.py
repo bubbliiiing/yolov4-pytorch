@@ -112,7 +112,7 @@ class YoloDataset(Dataset):
         index = 0
 
         place_x = [0, 0, int(w * min_offset_x), int(w * min_offset_x)]
-        place_y = [0, int(h * min_offset_y), int(w * min_offset_y), 0]
+        place_y = [0, int(h * min_offset_y), int(h * min_offset_y), 0]
         for line in annotation_line:
             # 每一行进行分割
             line_content = line.split()
