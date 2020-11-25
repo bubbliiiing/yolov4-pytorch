@@ -103,7 +103,7 @@ class YOLO(object):
     def detect_image(self, image):
         image_shape = np.array(np.shape(image)[0:2])
 
-        crop_img = np.array(letterbox_image(image, (self.model_image_size[0],self.model_image_size[1])))
+        crop_img = np.array(letterbox_image(image, (self.model_image_size[1],self.model_image_size[0])))
         photo = np.array(crop_img,dtype = np.float32)
         photo /= 255.0
         photo = np.transpose(photo, (2, 0, 1))
