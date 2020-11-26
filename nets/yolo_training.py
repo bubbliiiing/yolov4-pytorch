@@ -333,7 +333,7 @@ class Generator(object):
 
         # resize image
         new_ar = w/h * rand(1-jitter,1+jitter)/rand(1-jitter,1+jitter)
-        scale = rand(.5, 1.5)
+        scale = rand(.25, 2)
         if new_ar < 1:
             nh = int(scale*h)
             nw = int(nh*new_ar)
