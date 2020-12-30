@@ -389,13 +389,28 @@ for txt_file in ground_truth_files_list:
                     is_difficult = True
             else:
                     class_name, left, top, right, bottom = line.split()
-        except ValueError:
-            error_msg = "Error: File " + txt_file + " in the wrong format.\n"
-            error_msg += " Expected: <class_name> <left> <top> <right> <bottom> ['difficult']\n"
-            error_msg += " Received: " + line
-            error_msg += "\n\nIf you have a <class_name> with spaces between words you should remove them\n"
-            error_msg += "by running the script \"remove_space.py\" or \"rename_class.py\" in the \"extra/\" folder."
-            error(error_msg)
+                    
+        except:
+            if "difficult" in line:
+                line_split = line.split()
+                _difficult = line_split[-1]
+                bottom = line_split[-2]
+                right = line_split[-3]
+                top = line_split[-4]
+                left = line_split[-5]
+                class_name = ""
+                for name in line_split[:-5]:
+                    class_name += name
+                is_difficult = True
+            else:
+                line_split = line.split()
+                bottom = line_split[-1]
+                right = line_split[-2]
+                top = line_split[-3]
+                left = line_split[-4]
+                class_name = ""
+                for name in line_split[:-4]:
+                    class_name += name
         # check if class is in the ignore list, if yes skip
         if class_name in args.ignore:
             continue
@@ -481,11 +496,17 @@ for class_index, class_name in enumerate(gt_classes):
         for line in lines:
             try:
                 tmp_class_name, confidence, left, top, right, bottom = line.split()
-            except ValueError:
-                error_msg = "Error: File " + txt_file + " in the wrong format.\n"
-                error_msg += " Expected: <class_name> <confidence> <left> <top> <right> <bottom>\n"
-                error_msg += " Received: " + line
-                error(error_msg)
+            except:
+                line_split = line.split()
+                bottom = line_split[-1]
+                right = line_split[-2]
+                top = line_split[-3]
+                left = line_split[-4]
+                confidence = line_split[-5]
+                tmp_class_name = ""
+                for name in line_split[:-5]:
+                    tmp_class_name += name
+
             if tmp_class_name == class_name:
                 #print("match")
                 bbox = left + " " + top + " " + right + " " +bottom
@@ -702,8 +723,9 @@ with open(results_files_path + "/results.txt", 'w') as results_file:
         rounded_rec = [ '%.2f' % elem for elem in rec ]
         results_file.write(text + "\n Precision: " + str(rounded_prec) + "\n Recall :" + str(rounded_rec) + "\n\n")
         if not args.quiet:
-            print(text + "\t||\tscore_threhold=0.5 : " + "F1=" + "{0:.2f}".format(F1[score05_idx])\
-                 + " ; Recall=" + "{0:.2f}%".format(rec[score05_idx]*100) + " ; Precision=" + "{0:.2f}%".format(prec[score05_idx]*100))
+            if(len(rec)!=0):
+                print(text + "\t||\tscore_threhold=0.5 : " + "F1=" + "{0:.2f}".format(F1[score05_idx])\
+                    + " ; Recall=" + "{0:.2f}%".format(rec[score05_idx]*100) + " ; Precision=" + "{0:.2f}%".format(prec[score05_idx]*100))
         ap_dictionary[class_name] = ap
 
         n_images = counter_images_per_class[class_name]
