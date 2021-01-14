@@ -28,17 +28,19 @@ class FPS_YOLO(YOLO):
         # 调整图片使其符合输入要求
         image_shape = np.array(np.shape(image)[0:2])
 
+        #---------------------------------------------------------#
+        #   给图像增加灰条，实现不失真的resize
+        #---------------------------------------------------------#
         crop_img = np.array(letterbox_image(image, (self.model_image_size[1],self.model_image_size[0])))
-        photo = np.array(crop_img,dtype = np.float32)
-        photo /= 255.0
+        photo = np.array(crop_img,dtype = np.float32) / 255.0
         photo = np.transpose(photo, (2, 0, 1))
-        photo = photo.astype(np.float32)
-        images = []
-        images.append(photo)
-        images = np.asarray(images)
+        #---------------------------------------------------------#
+        #   添加上batch_size维度
+        #---------------------------------------------------------#
+        images = [photo]
 
         with torch.no_grad():
-            images = torch.from_numpy(images)
+            images = torch.from_numpy(np.asarray(images))
             if self.cuda:
                 images = images.cuda()
             outputs = self.net(images)

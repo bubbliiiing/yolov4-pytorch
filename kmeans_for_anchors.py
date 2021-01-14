@@ -1,7 +1,9 @@
-import numpy as np
-import xml.etree.ElementTree as ET
 import glob
 import random
+import xml.etree.ElementTree as ET
+
+import numpy as np
+
 
 def cas_iou(box,cluster):
     x = np.minimum(cluster[:,0],box[0])
@@ -61,6 +63,9 @@ def load_data(path):
         tree = ET.parse(xml_file)
         height = int(tree.findtext('./size/height'))
         width = int(tree.findtext('./size/width'))
+        if height<=0 or width<=0:
+            continue
+        
         # 对于每一个目标都获得它的宽高
         for obj in tree.iter('object'):
             xmin = int(float(obj.findtext('bndbox/xmin'))) / width

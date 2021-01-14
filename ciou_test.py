@@ -1,6 +1,9 @@
-import torch
 import math
+
 import numpy as np
+import torch
+
+
 def box_ciou(b1, b2):
     """
     输入为：

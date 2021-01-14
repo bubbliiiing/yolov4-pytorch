@@ -1,13 +1,14 @@
+import argparse
 import glob
 import json
+import math
+import operator
 import os
 import shutil
-import operator
 import sys
-import argparse
-import math
 
 import numpy as np
+
 #----------------------------------------------------#
 #   用于计算mAP
 #   代码克隆自https://github.com/Cartucho/mAP
