@@ -653,11 +653,11 @@ class Generator(object):
                         img,y = self.get_random_data_with_Mosaic(lines[i:i+4], self.image_size[0:2])
                         i = (i+4) % n
                     else:
-                        img,y = self.get_random_data(lines[i], self.image_size[0:2], train)
+                        img,y = self.get_random_data(lines[i], self.image_size[0:2], random=train)
                         i = (i+1) % n
                     flag = bool(1-flag)
                 else:
-                    img,y = self.get_random_data(lines[i], self.image_size[0:2], train)
+                    img,y = self.get_random_data(lines[i], self.image_size[0:2], random=train)
                     i = (i+1) % n
                     
                 if len(y)!=0:
