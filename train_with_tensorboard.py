@@ -272,7 +272,7 @@ if __name__ == "__main__":
             gen = Generator(Batch_size, lines[:num_train],
                             (input_shape[0], input_shape[1])).generate(train=True, mosaic = mosaic)
             gen_val = Generator(Batch_size, lines[num_train:],
-                            (input_shape[0], input_shape[1])).generate(train=False, mosaic = mosaic)
+                            (input_shape[0], input_shape[1])).generate(train=False, mosaic = False)
 
         epoch_size = max(1, num_train//Batch_size)
         epoch_size_val = num_val//Batch_size
@@ -309,7 +309,7 @@ if __name__ == "__main__":
             gen = Generator(Batch_size, lines[:num_train],
                             (input_shape[0], input_shape[1])).generate(train=True, mosaic = mosaic)
             gen_val = Generator(Batch_size, lines[num_train:],
-                            (input_shape[0], input_shape[1])).generate(train=False, mosaic = mosaic)
+                            (input_shape[0], input_shape[1])).generate(train=False, mosaic = False)
 
         epoch_size = max(1, num_train//Batch_size)
         epoch_size_val = num_val//Batch_size
