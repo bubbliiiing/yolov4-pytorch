@@ -175,11 +175,12 @@ if __name__ == "__main__":
     
     #------------------------------------------------------#
     #   Yolov4的tricks应用
-    #   mosaic 马赛克数据增强 True or False
+    #   mosaic 马赛克数据增强 True or False 
+    #   实际测试时mosaic数据增强并不稳定，所以默认为False
     #   Cosine_scheduler 余弦退火学习率 True or False
     #   label_smoothing 标签平滑 0.01以下一般 如0.01、0.005
     #------------------------------------------------------#
-    mosaic = True
+    mosaic = False
     Cosine_lr = False
     smoooth_label = 0
 
@@ -256,11 +257,15 @@ if __name__ == "__main__":
         Init_Epoch = 0
         Freeze_Epoch = 50
         
-        optimizer = optim.Adam(net.parameters(),lr,weight_decay=5e-4)
+        #----------------------------------------------------------------------------#
+        #   我在实际测试时，发现optimizer的weight_decay起到了反作用，
+        #   所以去除掉了weight_decay，大家也可以开起来试试，一般是weight_decay=5e-4
+        #----------------------------------------------------------------------------#
+        optimizer = optim.Adam(net.parameters(),lr)
         if Cosine_lr:
             lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5, eta_min=1e-5)
         else:
-            lr_scheduler = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.95)
+            lr_scheduler = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.92)
 
         if Use_Data_Loader:
             train_dataset = YoloDataset(lines[:num_train], (input_shape[0], input_shape[1]), mosaic=mosaic, is_train=True)
@@ -293,11 +298,15 @@ if __name__ == "__main__":
         Freeze_Epoch = 50
         Unfreeze_Epoch = 100
 
-        optimizer = optim.Adam(net.parameters(),lr,weight_decay=5e-4)
+        #----------------------------------------------------------------------------#
+        #   我在实际测试时，发现optimizer的weight_decay起到了反作用，
+        #   所以去除掉了weight_decay，大家也可以开起来试试，一般是weight_decay=5e-4
+        #----------------------------------------------------------------------------#
+        optimizer = optim.Adam(net.parameters(),lr)
         if Cosine_lr:
             lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5, eta_min=1e-5)
         else:
-            lr_scheduler = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.95)
+            lr_scheduler = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.92)
 
         if Use_Data_Loader:
             train_dataset = YoloDataset(lines[:num_train], (input_shape[0], input_shape[1]), mosaic=mosaic, is_train=True)
