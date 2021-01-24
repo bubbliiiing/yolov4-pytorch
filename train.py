@@ -165,11 +165,12 @@ if __name__ == "__main__":
     
     #------------------------------------------------------#
     #   Yolov4的tricks应用
-    #   mosaic 马赛克数据增强 True or False
+    #   mosaic 马赛克数据增强 True or False 
+    #   实际测试时mosaic数据增强并不稳定，所以默认为False
     #   Cosine_scheduler 余弦退火学习率 True or False
     #   label_smoothing 标签平滑 0.01以下一般 如0.01、0.005
     #------------------------------------------------------#
-    mosaic = True
+    mosaic = False
     Cosine_lr = False
     smoooth_label = 0
 
