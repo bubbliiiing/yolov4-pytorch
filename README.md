@@ -1,6 +1,9 @@
 ## YOLOV4：You Only Look Once目标检测模型在pytorch当中的实现
 ---
 
+**2021年2月7日更新：**   
+**加入letterbox_image的选项，关闭letterbox_image后网络的map得到大幅度提升。**
+
 ### 目录
 1. [性能情况 Performance](#性能情况)
 2. [实现的内容 Achievement](#实现的内容)
