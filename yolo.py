@@ -31,7 +31,12 @@ class YOLO(object):
         "model_image_size"  : (416, 416, 3),
         "confidence"        : 0.5,
         "iou"               : 0.3,
-        "cuda"              : True
+        "cuda"              : True,
+        #---------------------------------------------------------------------#
+        #   该变量用于控制是否使用letterbox_image对输入图像进行不失真的resize，
+        #   在多次测试后，发现关闭letterbox_image直接resize的效果更好
+        #---------------------------------------------------------------------#
+        "letterbox_image"   : False,
     }
 
     @classmethod
@@ -118,8 +123,13 @@ class YOLO(object):
 
         #---------------------------------------------------------#
         #   给图像增加灰条，实现不失真的resize
+        #   也可以直接resize进行识别
         #---------------------------------------------------------#
-        crop_img = np.array(letterbox_image(image, (self.model_image_size[1],self.model_image_size[0])))
+        if self.letterbox_image:
+            crop_img = np.array(letterbox_image(image, (self.model_image_size[1],self.model_image_size[0])))
+        else:
+            crop_img = image.convert('RGB')
+            crop_img = crop_img.resize((self.model_image_size[1],self.model_image_size[0]), Image.BICUBIC)
         photo = np.array(crop_img,dtype = np.float32) / 255.0
         photo = np.transpose(photo, (2, 0, 1))
         #---------------------------------------------------------#
@@ -170,8 +180,15 @@ class YOLO(object):
             #   因此生成的top_bboxes是相对于有灰条的图像的
             #   我们需要对其进行修改，去除灰条的部分。
             #-----------------------------------------------------------------#
-            boxes = yolo_correct_boxes(top_ymin,top_xmin,top_ymax,top_xmax,np.array([self.model_image_size[0],self.model_image_size[1]]),image_shape)
-
+            if self.letterbox_image:
+                boxes = yolo_correct_boxes(top_ymin,top_xmin,top_ymax,top_xmax,np.array([self.model_image_size[0],self.model_image_size[1]]),image_shape)
+            else:
+                top_xmin = top_xmin / self.model_image_size[1] * image_shape[1]
+                top_ymin = top_ymin / self.model_image_size[0] * image_shape[0]
+                top_xmax = top_xmax / self.model_image_size[1] * image_shape[1]
+                top_ymax = top_ymax / self.model_image_size[0] * image_shape[0]
+                boxes = np.concatenate([top_ymin,top_xmin,top_ymax,top_xmax], axis=-1)
+                
         font = ImageFont.truetype(font='model_data/simhei.ttf',size=np.floor(3e-2 * np.shape(image)[1] + 0.5).astype('int32'))
 
         thickness = max((np.shape(image)[0] + np.shape(image)[1]) // self.model_image_size[0], 1)
