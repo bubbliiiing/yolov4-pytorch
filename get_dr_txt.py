@@ -21,6 +21,20 @@ from utils.utils import (DecodeBox, bbox_iou, letterbox_image,
 from yolo import YOLO
 
 
+'''
+这里设置的门限值较低是因为计算map需要用到不同门限条件下的Recall和Precision值。
+所以只有保留的框足够多，计算的map才会更精确，详情可以了解map的原理。
+计算map时输出的Recall和Precision值指的是门限为0.5时的Recall和Precision值。
+
+此处获得的./input/detection-results/里面的txt的框的数量会比直接predict多一些，这是因为这里的门限低，
+目的是为了计算不同门限条件下的Recall和Precision值，从而实现map的计算。
+
+这里的self.iou指的是非极大抑制所用到的iou，具体的可以了解非极大抑制的原理，
+如果低分框与高分框的iou大于这里设定的self.iou，那么该低分框将会被剔除。
+
+可能有些同学知道有0.5和0.5:0.95的mAP，这里的self.iou=0.5不代表mAP0.5。
+如果想要设定mAP0.x，比如设定mAP0.75，可以去get_map.py设定MINOVERLAP。
+'''
 class mAP_Yolo(YOLO):
     #---------------------------------------------------#
     #   检测图片
