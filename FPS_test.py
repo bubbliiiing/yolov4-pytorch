@@ -1,19 +1,10 @@
-import colorsys
-import os
 import time
 
-import cv2
 import numpy as np
 import torch
-import torch.backends.cudnn as cudnn
-import torch.nn as nn
-from PIL import Image, ImageDraw, ImageFont
-from torch.autograd import Variable
-from tqdm import tqdm
+from PIL import Image
 
-from nets.yolo4 import YoloBody
-from utils.utils import (DecodeBox, bbox_iou, letterbox_image,
-                         non_max_suppression, yolo_correct_boxes)
+from utils.utils import letterbox_image, non_max_suppression, yolo_correct_boxes
 from yolo import YOLO
 
 '''

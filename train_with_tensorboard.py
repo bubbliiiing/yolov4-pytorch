@@ -1,21 +1,18 @@
 #-------------------------------------#
 #       对数据集进行训练
 #-------------------------------------#
-import os
 import numpy as np
-import time
 import torch
-from torch.autograd import Variable
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-from torch.utils.data import DataLoader
-from utils.dataloader import yolo_dataset_collate, YoloDataset
-from nets.yolo_training import YOLOLoss,Generator
-from nets.yolo4 import YoloBody
+import torch.optim as optim
 from tensorboardX import SummaryWriter
+from torch.utils.data import DataLoader
 from tqdm import tqdm
+
+from nets.yolo4 import YoloBody
+from nets.yolo_training import YOLOLoss
+from utils.dataloader import YoloDataset, yolo_dataset_collate
+
 
 #---------------------------------------------------#
 #   获得类和先验框
@@ -38,12 +35,13 @@ def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']
 
-def fit_ont_epoch(net,yolo_losses,epoch,epoch_size,epoch_size_val,gen,genval,Epoch,cuda,writer):
+def fit_ont_epoch(net,yolo_loss,epoch,epoch_size,epoch_size_val,gen,genval,Epoch,cuda,writer):
     global train_tensorboard_step, val_tensorboard_step
     total_loss = 0
     val_loss = 0
 
     net.train()
+    print('Start Train')
     with tqdm(total=epoch_size,desc=f'Epoch {epoch + 1}/{Epoch}',postfix=dict,mininterval=0.3) as pbar:
         for iteration, batch in enumerate(gen):
             if iteration >= epoch_size:
@@ -51,11 +49,11 @@ def fit_ont_epoch(net,yolo_losses,epoch,epoch_size,epoch_size_val,gen,genval,Epo
             images, targets = batch[0], batch[1]
             with torch.no_grad():
                 if cuda:
-                    images = Variable(torch.from_numpy(images).type(torch.FloatTensor)).cuda()
-                    targets = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)) for ann in targets]
+                    images  = torch.from_numpy(images).type(torch.FloatTensor).cuda()
+                    targets = [torch.from_numpy(ann).type(torch.FloatTensor) for ann in targets]
                 else:
-                    images = Variable(torch.from_numpy(images).type(torch.FloatTensor))
-                    targets = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)) for ann in targets]
+                    images  = torch.from_numpy(images).type(torch.FloatTensor)
+                    targets = [torch.from_numpy(ann).type(torch.FloatTensor) for ann in targets]
 
             #----------------------#
             #   清零梯度
@@ -71,7 +69,7 @@ def fit_ont_epoch(net,yolo_losses,epoch,epoch_size,epoch_size_val,gen,genval,Epo
             #   计算损失
             #----------------------#
             for i in range(3):
-                loss_item, num_pos = yolo_losses[i](outputs[i], targets)
+                loss_item, num_pos = yolo_loss(outputs[i], targets)
                 losses.append(loss_item)
                 num_pos_all += num_pos
 
@@ -104,17 +102,17 @@ def fit_ont_epoch(net,yolo_losses,epoch,epoch_size,epoch_size_val,gen,genval,Epo
 
             with torch.no_grad():
                 if cuda:
-                    images_val = Variable(torch.from_numpy(images_val).type(torch.FloatTensor)).cuda()
-                    targets_val = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)) for ann in targets_val]
+                    images_val  = torch.from_numpy(images_val).type(torch.FloatTensor).cuda()
+                    targets_val = [torch.from_numpy(ann).type(torch.FloatTensor) for ann in targets_val]
                 else:
-                    images_val = Variable(torch.from_numpy(images_val).type(torch.FloatTensor))
-                    targets_val = [Variable(torch.from_numpy(ann).type(torch.FloatTensor)) for ann in targets_val]
+                    images_val  = torch.from_numpy(images_val).type(torch.FloatTensor)
+                    targets_val = [torch.from_numpy(ann).type(torch.FloatTensor) for ann in targets_val]
                 optimizer.zero_grad()
                 outputs = net(images_val)
                 losses = []
                 num_pos_all = 0
                 for i in range(3):
-                    loss_item, num_pos = yolo_losses[i](outputs[i], targets_val)
+                    loss_item, num_pos = yolo_loss(outputs[i], targets_val)
                     losses.append(loss_item)
                     num_pos_all += num_pos
 
@@ -133,7 +131,6 @@ def fit_ont_epoch(net,yolo_losses,epoch,epoch_size,epoch_size_val,gen,genval,Epo
     print('Finish Validation')
     print('Epoch:'+ str(epoch+1) + '/' + str(Epoch))
     print('Total Loss: %.4f || Val Loss: %.4f ' % (total_loss/(epoch_size+1),val_loss/(epoch_size_val+1)))
-
     print('Saving state, iter:', str(epoch+1))
     torch.save(model.state_dict(), 'logs/Epoch%d-Total_Loss%.4f-Val_Loss%.4f.pth'%((epoch+1),total_loss/(epoch_size+1),val_loss/(epoch_size_val+1)))
 
@@ -144,10 +141,6 @@ if __name__ == "__main__":
     #   没有GPU可以设置成False
     #-------------------------------#
     Cuda = True
-    #-------------------------------#
-    #   Dataloder的使用
-    #-------------------------------#
-    Use_Data_Loader = True
     #------------------------------------------------------#
     #   是否对损失进行归一化，用于改变loss的大小
     #   用于决定计算最终loss是除上batch_size还是除上正样本数量
@@ -211,11 +204,8 @@ if __name__ == "__main__":
         net = net.cuda()
 
     # 建立loss函数
-    yolo_losses = []
-    for i in range(3):
-        yolo_losses.append(YOLOLoss(np.reshape(anchors,[-1,2]),num_classes, \
-                                (input_shape[1], input_shape[0]), smoooth_label, Cuda, normalize))
-
+    yolo_loss    = YOLOLoss(np.reshape(anchors,[-1,2]), num_classes, (input_shape[1], input_shape[0]), smoooth_label, Cuda, normalize)
+    
     #----------------------------------------------------#
     #   获得图片路径和标签
     #----------------------------------------------------#
@@ -252,36 +242,33 @@ if __name__ == "__main__":
     train_tensorboard_step = 1
     val_tensorboard_step = 1
     if True:
-        lr = 1e-3
-        Batch_size = 4
-        Init_Epoch = 0
-        Freeze_Epoch = 50
+        lr              = 1e-3
+        Batch_size      = 4
+        Init_Epoch      = 0
+        Freeze_Epoch    = 50
         
         #----------------------------------------------------------------------------#
         #   我在实际测试时，发现optimizer的weight_decay起到了反作用，
         #   所以去除掉了weight_decay，大家也可以开起来试试，一般是weight_decay=5e-4
         #----------------------------------------------------------------------------#
-        optimizer = optim.Adam(net.parameters(),lr)
+        optimizer       = optim.Adam(net.parameters(),lr)
         if Cosine_lr:
             lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5, eta_min=1e-5)
         else:
-            lr_scheduler = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.92)
+            lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.92)
 
-        if Use_Data_Loader:
-            train_dataset = YoloDataset(lines[:num_train], (input_shape[0], input_shape[1]), mosaic=mosaic, is_train=True)
-            val_dataset = YoloDataset(lines[num_train:], (input_shape[0], input_shape[1]), mosaic=False, is_train=False)
-            gen = DataLoader(train_dataset, shuffle=True, batch_size=Batch_size, num_workers=4, pin_memory=True,
-                                    drop_last=True, collate_fn=yolo_dataset_collate)
-            gen_val = DataLoader(val_dataset, shuffle=True, batch_size=Batch_size, num_workers=4,pin_memory=True, 
-                                    drop_last=True, collate_fn=yolo_dataset_collate)
-        else:
-            gen = Generator(Batch_size, lines[:num_train],
-                            (input_shape[0], input_shape[1])).generate(train=True, mosaic = mosaic)
-            gen_val = Generator(Batch_size, lines[num_train:],
-                            (input_shape[0], input_shape[1])).generate(train=False, mosaic = False)
+        train_dataset   = YoloDataset(lines[:num_train], (input_shape[0], input_shape[1]), mosaic=mosaic, is_train=True)
+        val_dataset     = YoloDataset(lines[num_train:], (input_shape[0], input_shape[1]), mosaic=False, is_train=False)
+        gen             = DataLoader(train_dataset, shuffle=True, batch_size=Batch_size, num_workers=4, pin_memory=True,
+                                drop_last=True, collate_fn=yolo_dataset_collate)
+        gen_val         = DataLoader(val_dataset, shuffle=True, batch_size=Batch_size, num_workers=4,pin_memory=True, 
+                                drop_last=True, collate_fn=yolo_dataset_collate)
 
-        epoch_size = max(1, num_train//Batch_size)
-        epoch_size_val = num_val//Batch_size
+        epoch_size      = num_train // Batch_size
+        epoch_size_val  = num_val // Batch_size
+        
+        if epoch_size == 0 or epoch_size_val == 0:
+            raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
         #------------------------------------#
         #   冻结一定部分训练
         #------------------------------------#
@@ -289,14 +276,14 @@ if __name__ == "__main__":
             param.requires_grad = False
 
         for epoch in range(Init_Epoch,Freeze_Epoch):
-            fit_ont_epoch(net,yolo_losses,epoch,epoch_size,epoch_size_val,gen,gen_val,Freeze_Epoch,Cuda,writer)
+            fit_ont_epoch(net,yolo_loss,epoch,epoch_size,epoch_size_val,gen,gen_val,Freeze_Epoch,Cuda,writer)
             lr_scheduler.step()
 
     if True:
-        lr = 1e-4
-        Batch_size = 2
-        Freeze_Epoch = 50
-        Unfreeze_Epoch = 100
+        lr              = 1e-4
+        Batch_size      = 2
+        Freeze_Epoch    = 50
+        Unfreeze_Epoch  = 100
 
         #----------------------------------------------------------------------------#
         #   我在实际测试时，发现optimizer的weight_decay起到了反作用，
@@ -306,23 +293,20 @@ if __name__ == "__main__":
         if Cosine_lr:
             lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5, eta_min=1e-5)
         else:
-            lr_scheduler = optim.lr_scheduler.StepLR(optimizer,step_size=1,gamma=0.92)
+            lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.92)
 
-        if Use_Data_Loader:
-            train_dataset = YoloDataset(lines[:num_train], (input_shape[0], input_shape[1]), mosaic=mosaic, is_train=True)
-            val_dataset = YoloDataset(lines[num_train:], (input_shape[0], input_shape[1]), mosaic=False, is_train=False)
-            gen = DataLoader(train_dataset, shuffle=True, batch_size=Batch_size, num_workers=4, pin_memory=True,
-                                    drop_last=True, collate_fn=yolo_dataset_collate)
-            gen_val = DataLoader(val_dataset, shuffle=True, batch_size=Batch_size, num_workers=4,pin_memory=True, 
-                                    drop_last=True, collate_fn=yolo_dataset_collate)
-        else:
-            gen = Generator(Batch_size, lines[:num_train],
-                            (input_shape[0], input_shape[1])).generate(train=True, mosaic = mosaic)
-            gen_val = Generator(Batch_size, lines[num_train:],
-                            (input_shape[0], input_shape[1])).generate(train=False, mosaic = False)
+        train_dataset = YoloDataset(lines[:num_train], (input_shape[0], input_shape[1]), mosaic=mosaic, is_train=True)
+        val_dataset = YoloDataset(lines[num_train:], (input_shape[0], input_shape[1]), mosaic=False, is_train=False)
+        gen = DataLoader(train_dataset, shuffle=True, batch_size=Batch_size, num_workers=4, pin_memory=True,
+                                drop_last=True, collate_fn=yolo_dataset_collate)
+        gen_val = DataLoader(val_dataset, shuffle=True, batch_size=Batch_size, num_workers=4,pin_memory=True, 
+                                drop_last=True, collate_fn=yolo_dataset_collate)
 
-        epoch_size = max(1, num_train//Batch_size)
-        epoch_size_val = num_val//Batch_size
+        epoch_size      = num_train // Batch_size
+        epoch_size_val  = num_val // Batch_size
+        
+        if epoch_size == 0 or epoch_size_val == 0:
+            raise ValueError("数据集过小，无法进行训练，请扩充数据集。")
         #------------------------------------#
         #   解冻后训练
         #------------------------------------#
@@ -330,5 +314,5 @@ if __name__ == "__main__":
             param.requires_grad = True
 
         for epoch in range(Freeze_Epoch,Unfreeze_Epoch):
-            fit_ont_epoch(net,yolo_losses,epoch,epoch_size,epoch_size_val,gen,gen_val,Unfreeze_Epoch,Cuda,writer)
+            fit_ont_epoch(net,yolo_loss,epoch,epoch_size,epoch_size_val,gen,gen_val,Unfreeze_Epoch,Cuda,writer)
             lr_scheduler.step()

@@ -4,16 +4,13 @@
 import colorsys
 import os
 
-import cv2
 import numpy as np
 import torch
-import torch.backends.cudnn as cudnn
 import torch.nn as nn
 from PIL import Image, ImageDraw, ImageFont
-from torch.autograd import Variable
 
 from nets.yolo4 import YoloBody
-from utils.utils import (DecodeBox, bbox_iou, letterbox_image,
+from utils.utils import (DecodeBox, letterbox_image,
                          non_max_suppression, yolo_correct_boxes)
 
 
@@ -94,7 +91,6 @@ class YOLO(object):
         print('Finished!')
         
         if self.cuda:
-            os.environ["CUDA_VISIBLE_DEVICES"] = '0'
             self.net = nn.DataParallel(self.net)
             self.net = self.net.cuda()
 
@@ -104,7 +100,6 @@ class YOLO(object):
         self.yolo_decodes = []
         for i in range(3):
             self.yolo_decodes.append(DecodeBox(self.anchors[i], len(self.class_names),  (self.model_image_size[1], self.model_image_size[0])))
-
 
         print('{} model, anchors, and classes loaded.'.format(self.model_path))
         # 画框设置不同的颜色
@@ -119,8 +114,12 @@ class YOLO(object):
     #   检测图片
     #---------------------------------------------------#
     def detect_image(self, image):
-        image_shape = np.array(np.shape(image)[0:2])
+        #---------------------------------------------------------#
+        #   在这里将图像转换成RGB图像，防止灰度图在预测时报错。
+        #---------------------------------------------------------#
+        image = image.convert('RGB')
 
+        image_shape = np.array(np.shape(image)[0:2])
         #---------------------------------------------------------#
         #   给图像增加灰条，实现不失真的resize
         #   也可以直接resize进行识别
@@ -128,8 +127,7 @@ class YOLO(object):
         if self.letterbox_image:
             crop_img = np.array(letterbox_image(image, (self.model_image_size[1],self.model_image_size[0])))
         else:
-            crop_img = image.convert('RGB')
-            crop_img = crop_img.resize((self.model_image_size[1],self.model_image_size[0]), Image.BICUBIC)
+            crop_img = image.resize((self.model_image_size[1],self.model_image_size[0]), Image.BICUBIC)
         photo = np.array(crop_img,dtype = np.float32) / 255.0
         photo = np.transpose(photo, (2, 0, 1))
         #---------------------------------------------------------#

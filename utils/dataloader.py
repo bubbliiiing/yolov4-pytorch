@@ -1,17 +1,10 @@
-from random import shuffle
-import numpy as np
-import torch
-import torch.nn as nn
-import math
-import torch.nn.functional as F
-from PIL import Image
-from torch.autograd import Variable
-from torch.utils.data import DataLoader
-from torch.utils.data.dataset import Dataset
-from utils.utils import bbox_iou, merge_bboxes
-from matplotlib.colors import rgb_to_hsv, hsv_to_rgb
-from nets.yolo_training import Generator
 import cv2
+import numpy as np
+from PIL import Image
+from torch.utils.data.dataset import Dataset
+
+from utils.utils import merge_bboxes
+
 
 class YoloDataset(Dataset):
     def __init__(self, train_lines, image_size, mosaic=True, is_train=True):
