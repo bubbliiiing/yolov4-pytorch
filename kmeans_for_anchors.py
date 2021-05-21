@@ -1,9 +1,12 @@
+#-------------------------------------------------------------------------------------------------#
+#   kmeans虽然会对数据集中的框进行聚类，但是很多数据集由于框的大小相近，聚类出来的9个框相差不大，
+#   这样的框反而不利于模型的训练。因为不同的特征层适合不同大小的先验框，越浅的特征层适合越大的先验框
+#   原始网络的先验框已经按大中小比例分配好了，不进行聚类也会有非常好的效果。
+#-------------------------------------------------------------------------------------------------#
 import glob
-import random
 import xml.etree.ElementTree as ET
 
 import numpy as np
-
 
 def cas_iou(box,cluster):
     x = np.minimum(cluster[:,0],box[0])
@@ -19,7 +22,6 @@ def cas_iou(box,cluster):
 
 def avg_iou(box,cluster):
     return np.mean([np.max(cas_iou(box[i],cluster)) for i in range(box.shape[0])])
-
 
 def kmeans(box,k):
     # 取出一共有多少框

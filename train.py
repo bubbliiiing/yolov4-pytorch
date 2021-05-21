@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from nets.yolo4 import YoloBody
-from nets.yolo_training import YOLOLoss, LossHistory, weights_init
+from nets.yolo_training import LossHistory, YOLOLoss, weights_init
 from utils.dataloader import YoloDataset, yolo_dataset_collate
 
 
@@ -36,6 +36,8 @@ def get_lr(optimizer):
 
         
 def fit_one_epoch(net,yolo_loss,epoch,epoch_size,epoch_size_val,gen,genval,Epoch,cuda):
+    if Tensorboard:
+        global train_tensorboard_step, val_tensorboard_step
     total_loss = 0
     val_loss = 0
 
@@ -72,18 +74,26 @@ def fit_one_epoch(net,yolo_loss,epoch,epoch_size,epoch_size_val,gen,genval,Epoch
                 num_pos_all += num_pos
 
             loss = sum(losses) / num_pos_all
+            total_loss += loss.item()
+
             #----------------------#
             #   反向传播
             #----------------------#
             loss.backward()
             optimizer.step()
 
-            total_loss += loss.item()
-            
+            if Tensorboard:
+                # 将loss写入tensorboard，每一步都写
+                writer.add_scalar('Train_loss', loss, train_tensorboard_step)
+                train_tensorboard_step += 1
+
             pbar.set_postfix(**{'total_loss': total_loss / (iteration + 1), 
                                 'lr'        : get_lr(optimizer)})
             pbar.update(1)
 
+    # 将loss写入tensorboard，下面注释的是每个世代保存一次
+    # if Tensorboard:
+    #     writer.add_scalar('Train_loss', total_loss/(iteration+1), epoch)
     net.eval()
     print('Start Validation')
     with tqdm(total=epoch_size_val, desc=f'Epoch {epoch + 1}/{Epoch}',postfix=dict,mininterval=0.3) as pbar:
@@ -110,9 +120,17 @@ def fit_one_epoch(net,yolo_loss,epoch,epoch_size,epoch_size_val,gen,genval,Epoch
                     num_pos_all += num_pos
                 loss = sum(losses) / num_pos_all
                 val_loss += loss.item()
+
+            # 将loss写入tensorboard, 下面注释的是每一步都写
+            # if Tensorboard:
+            #     writer.add_scalar('Val_loss', loss, val_tensorboard_step)
+            #     val_tensorboard_step += 1
             pbar.set_postfix(**{'total_loss': val_loss / (iteration + 1)})
             pbar.update(1)
             
+    # 将loss写入tensorboard，每个世代保存一次
+    if Tensorboard:
+        writer.add_scalar('Val_loss',val_loss / (epoch_size_val+1), epoch)
     loss_history.append_loss(total_loss/(epoch_size+1), val_loss/(epoch_size_val+1))
     print('Finish Validation')
     print('Epoch:'+ str(epoch+1) + '/' + str(Epoch))
@@ -125,6 +143,10 @@ def fit_one_epoch(net,yolo_loss,epoch,epoch_size,epoch_size_val,gen,genval,Epoch
 #   https://www.bilibili.com/video/BV1zE411u7Vw
 #----------------------------------------------------#
 if __name__ == "__main__":
+    #-------------------------------#
+    #   是否使用Tensorboard
+    #-------------------------------#
+    Tensorboard = False
     #-------------------------------#
     #   是否使用Cuda
     #   没有GPU可以设置成False
@@ -141,20 +163,12 @@ if __name__ == "__main__":
     #   显存比较大可以使用608x608
     #-------------------------------#
     input_shape = (416,416)
-
     #----------------------------------------------------#
     #   classes和anchor的路径，非常重要
     #   训练前一定要修改classes_path，使其对应自己的数据集
     #----------------------------------------------------#
     anchors_path = 'model_data/yolo_anchors.txt'
     classes_path = 'model_data/voc_classes.txt'   
-    #----------------------------------------------------#
-    #   获取classes和anchor
-    #----------------------------------------------------#
-    class_names = get_classes(classes_path)
-    anchors = get_anchors(anchors_path)
-    num_classes = len(class_names)
-    
     #------------------------------------------------------#
     #   Yolov4的tricks应用
     #   mosaic 马赛克数据增强 True or False 
@@ -165,6 +179,13 @@ if __name__ == "__main__":
     mosaic = False
     Cosine_lr = False
     smoooth_label = 0
+
+    #----------------------------------------------------#
+    #   获取classes和anchor
+    #----------------------------------------------------#
+    class_names = get_classes(classes_path)
+    anchors = get_anchors(anchors_path)
+    num_classes = len(class_names)
 
     #------------------------------------------------------#
     #   创建yolo模型
@@ -213,7 +234,18 @@ if __name__ == "__main__":
     np.random.seed(None)
     num_val = int(len(lines)*val_split)
     num_train = len(lines) - num_val
-    
+
+    if Tensorboard:
+        from tensorboardX import SummaryWriter
+        writer = SummaryWriter(log_dir='logs',flush_secs=60)
+        if Cuda:
+            graph_inputs = torch.randn(1,3,input_shape[0],input_shape[1]).type(torch.FloatTensor).cuda()
+        else:
+            graph_inputs = torch.randn(1,3,input_shape[0],input_shape[1]).type(torch.FloatTensor)
+        writer.add_graph(model, graph_inputs)
+        train_tensorboard_step  = 1
+        val_tensorboard_step    = 1
+
     #------------------------------------------------------#
     #   主干特征提取网络特征通用，冻结训练可以加快训练速度
     #   也可以在训练初期防止权值被破坏。
