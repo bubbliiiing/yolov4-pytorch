@@ -167,7 +167,7 @@ img/street.jpg
 3. 利用voc_annotation.py划分测试集后，前往get_map.py文件修改classes_path，classes_path用于指向检测类别所对应的txt，这个txt和训练时的txt一样。评估自己的数据集必须要修改。
 4. 在yolo.py里面修改model_path以及classes_path。**model_path指向训练好的权值文件，在logs文件夹里。classes_path指向检测类别所对应的txt。**  
 5. 运行get_map.py即可获得评估结果，评估结果会保存在map_out文件夹中。
-6. 
+
 ## Reference
 https://github.com/qqwweee/keras-yolo3/  
 https://github.com/Cartucho/mAP  
