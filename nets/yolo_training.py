@@ -18,7 +18,7 @@ class YOLOLoss(nn.Module):
         self.anchors_mask   = anchors_mask
         self.label_smoothing = label_smoothing
 
-        self.ignore_threshold = 0.7
+        self.ignore_threshold = 0.5
         self.cuda = cuda
 
     def clip_by_tensor(self, t, t_min, t_max):
