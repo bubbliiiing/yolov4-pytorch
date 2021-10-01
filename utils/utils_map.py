@@ -709,33 +709,33 @@ def get_map(MINOVERLAP, draw_plot, path = './map_out'):
             '',
             )
 
-    """
-    Plot the total number of occurences of each class in the "detection-results" folder
-    """
-    if draw_plot:
-        window_title = "detection-results-info"
-        # Plot title
-        plot_title = "detection-results\n"
-        plot_title += "(" + str(len(dr_files_list)) + " files and "
-        count_non_zero_values_in_dictionary = sum(int(x) > 0 for x in list(det_counter_per_class.values()))
-        plot_title += str(count_non_zero_values_in_dictionary) + " detected classes)"
-        # end Plot title
-        x_label = "Number of objects per class"
-        output_path = RESULTS_FILES_PATH + "/detection-results-info.png"
-        to_show = False
-        plot_color = 'forestgreen'
-        true_p_bar = count_true_positives
-        draw_plot_func(
-            det_counter_per_class,
-            len(det_counter_per_class),
-            window_title,
-            plot_title,
-            x_label,
-            output_path,
-            to_show,
-            plot_color,
-            true_p_bar
-            )
+    # """
+    # Plot the total number of occurences of each class in the "detection-results" folder
+    # """
+    # if draw_plot:
+    #     window_title = "detection-results-info"
+    #     # Plot title
+    #     plot_title = "detection-results\n"
+    #     plot_title += "(" + str(len(dr_files_list)) + " files and "
+    #     count_non_zero_values_in_dictionary = sum(int(x) > 0 for x in list(det_counter_per_class.values()))
+    #     plot_title += str(count_non_zero_values_in_dictionary) + " detected classes)"
+    #     # end Plot title
+    #     x_label = "Number of objects per class"
+    #     output_path = RESULTS_FILES_PATH + "/detection-results-info.png"
+    #     to_show = False
+    #     plot_color = 'forestgreen'
+    #     true_p_bar = count_true_positives
+    #     draw_plot_func(
+    #         det_counter_per_class,
+    #         len(det_counter_per_class),
+    #         window_title,
+    #         plot_title,
+    #         x_label,
+    #         output_path,
+    #         to_show,
+    #         plot_color,
+    #         true_p_bar
+    #         )
 
     """
     Draw log-average miss rate plot (Show lamr of all classes in decreasing order)
