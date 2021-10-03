@@ -212,7 +212,7 @@ if __name__ == "__main__":
         #------------------------------------#
         if Freeze_Train:
             for param in model.backbone.parameters():
-                param.requires_grad = False
+                param.requires_grad = True
 
         for epoch in range(start_epoch, end_epoch):
             fit_one_epoch(model_train, model, yolo_loss, loss_history, optimizer, epoch, 
