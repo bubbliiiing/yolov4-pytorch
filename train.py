@@ -155,7 +155,7 @@ if __name__ == "__main__":
         if Cosine_lr:
             lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5, eta_min=1e-5)
         else:
-            lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.92)
+            lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.94)
 
         train_dataset   = YoloDataset(train_lines, input_shape, num_classes, mosaic=mosaic, train = True)
         val_dataset     = YoloDataset(val_lines, input_shape, num_classes, mosaic=False, train = False)
@@ -192,7 +192,7 @@ if __name__ == "__main__":
         if Cosine_lr:
             lr_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=5, eta_min=1e-5)
         else:
-            lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.92)
+            lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.94)
 
         train_dataset   = YoloDataset(train_lines, input_shape, num_classes, mosaic=mosaic, train = True)
         val_dataset     = YoloDataset(val_lines, input_shape, num_classes, mosaic=False, train = False)
