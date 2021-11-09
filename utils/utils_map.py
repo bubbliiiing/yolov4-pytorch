@@ -799,7 +799,7 @@ def preprocess_gt(gt_path, class_names):
         #   感谢 多学学英语吧 的提醒
         #   解决了'Results do not correspond to current coco set'问题
         #-----------------------------------------------------------------#
-        image['id']        = int(image_id)
+        image['id']        = str(image_id)
 
         for line in lines_list:
             difficult = 0 
@@ -821,7 +821,7 @@ def preprocess_gt(gt_path, class_names):
             
             left, top, right, bottom = float(left), float(top), float(right), float(bottom)
             cls_id  = class_names.index(class_name) + 1
-            bbox    = [left, top, right - left, bottom - top, difficult, int(image_id), cls_id, (right - left) * (bottom - top) - 10.0]
+            bbox    = [left, top, right - left, bottom - top, difficult, str(image_id), cls_id, (right - left) * (bottom - top) - 10.0]
             boxes_per_image.append(bbox)
         images.append(image)
         bboxes.extend(boxes_per_image)
@@ -864,7 +864,7 @@ def preprocess_dr(dr_path, class_names):
             class_name  = class_name[:-1]
             left, top, right, bottom = float(left), float(top), float(right), float(bottom)
             result                  = {}
-            result["image_id"]      = int(image_id)
+            result["image_id"]      = str(image_id)
             result["category_id"]   = class_names.index(class_name) + 1
             result["bbox"]          = [left, top, right - left, bottom - top]
             result["score"]         = float(confidence)
