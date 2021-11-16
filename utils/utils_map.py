@@ -832,7 +832,7 @@ def preprocess_gt(gt_path, class_names):
         category = {}
         category['supercategory']   = cls
         category['name']            = cls
-        category['id']              = i
+        category['id']              = i + 1
         categories.append(category)
     results['categories']   = categories
 
