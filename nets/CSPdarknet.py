@@ -166,12 +166,9 @@ class CSPDarkNet(nn.Module):
         out5 = self.stages[4](out4)
 
         return out3, out4, out5
-
-def darknet53(pretrained, **kwargs):
+    
+def darknet53(pretrained):
     model = CSPDarkNet([1, 2, 8, 8, 4])
     if pretrained:
-        if isinstance(pretrained, str):
-            model.load_state_dict(torch.load(pretrained))
-        else:
-            raise Exception("darknet request a pretrained path. got [{}]".format(pretrained))
+        model.load_state_dict(torch.load("model_data/CSPdarknet53_backbone_weights.pth"))
     return model
