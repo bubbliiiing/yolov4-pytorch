@@ -150,7 +150,7 @@ if __name__ == '__main__':
 
     cluster = cluster[np.argsort(cluster[:, 0] * cluster[:, 1])]
     print('avg_ratio:{:.2f}'.format(avg_iou(data, cluster)))
-    print(data)
+    print(cluster)
 
     f = open("yolo_anchors.txt", 'w')
     row = np.shape(cluster)[0]
