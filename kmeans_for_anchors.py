@@ -144,8 +144,8 @@ if __name__ == '__main__':
     for j in range(anchors_num):
         plt.scatter(data[near == j][:,0], data[near == j][:,1])
         plt.scatter(cluster[j][0], cluster[j][1], marker='x', c='black')
-    plt.show()
     plt.savefig("kmeans_for_anchors.jpg")
+    plt.show()
     print('Save kmeans_for_anchors.jpg in root dir.')
 
     cluster = cluster[np.argsort(cluster[:, 0] * cluster[:, 1])]
