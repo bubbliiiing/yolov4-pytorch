@@ -1,7 +1,10 @@
+import math
+from functools import partial
+
+import numpy as np
 import torch
 import torch.nn as nn
-import math
-import numpy as np
+
 
 class YOLOLoss(nn.Module):
     def __init__(self, anchors, num_classes, input_shape, cuda, anchors_mask = [[6,7,8], [3,4,5], [0,1,2]], label_smoothing = 0):
@@ -18,8 +21,13 @@ class YOLOLoss(nn.Module):
         self.anchors_mask   = anchors_mask
         self.label_smoothing = label_smoothing
 
+        self.balance        = [0.4, 1.0, 4]
+        self.box_ratio      = 0.05
+        self.obj_ratio      = 5 * (input_shape[0] * input_shape[1]) / (416 ** 2)
+        self.cls_ratio      = 1 * (num_classes / 80)
+
         self.ignore_threshold = 0.5
-        self.cuda = cuda
+        self.cuda           = cuda
 
     def clip_by_tensor(self, t, t_min, t_max):
         t = t.float()
@@ -178,30 +186,32 @@ class YOLOLoss(nn.Module):
             y_true          = y_true.cuda()
             noobj_mask      = noobj_mask.cuda()
             box_loss_scale  = box_loss_scale.cuda()
-        #-----------------------------------------------------------#
-        #   reshape_y_true[...,2:3]和reshape_y_true[...,3:4]
-        #   表示真实框的宽高，二者均在0-1之间
-        #   真实框越大，比重越小，小框的比重更大。
-        #-----------------------------------------------------------#
+        #--------------------------------------------------------------------------#
+        #   box_loss_scale是真实框宽高的乘积，宽高均在0-1之间，因此乘积也在0-1之间。
+        #   2-宽高的乘积代表真实框越大，比重越小，小框的比重更大。
+        #   使用iou损失时，大中小目标的回归损失不存在比例失衡问题，故弃用
+        #--------------------------------------------------------------------------#
         box_loss_scale = 2 - box_loss_scale
 
-        #---------------------------------------------------------------#
-        #   计算预测结果和真实结果的CIOU
-        #----------------------------------------------------------------#
-        ciou        = (1 - self.box_ciou(pred_boxes[y_true[..., 4] == 1], y_true[..., :4][y_true[..., 4] == 1])) * box_loss_scale[y_true[..., 4] == 1]
-        loss_loc    = torch.sum(ciou)
-        #-----------------------------------------------------------#
-        #   计算置信度的loss
-        #-----------------------------------------------------------#
-        loss_conf   = torch.sum(self.BCELoss(conf, y_true[..., 4]) * y_true[..., 4]) + \
-                      torch.sum(self.BCELoss(conf, y_true[..., 4]) * noobj_mask)
+        loss        = 0
+        obj_mask    = y_true[..., 4] == 1
+        n           = torch.sum(obj_mask)
+        if n != 0:
+            #---------------------------------------------------------------#
+            #   计算预测结果和真实结果的ciou
+            #----------------------------------------------------------------#
+            ciou        = self.box_ciou(pred_boxes, y_true[..., :4])
+            # loss_loc    = torch.mean((1 - ciou)[obj_mask] * box_loss_scale[obj_mask])
+            loss_loc    = torch.mean((1 - ciou)[obj_mask])
+            
+            loss_cls    = torch.mean(self.BCELoss(pred_cls[obj_mask], y_true[..., 5:][obj_mask]))
+            loss        += loss_loc * self.box_ratio + loss_cls * self.cls_ratio
 
-        loss_cls    = torch.sum(self.BCELoss(pred_cls[y_true[..., 4] == 1], self.smooth_labels(y_true[..., 5:][y_true[..., 4] == 1], self.label_smoothing, self.num_classes)))
-
-        loss        = loss_loc + loss_conf + loss_cls
-        num_pos = torch.sum(y_true[..., 4])
-        num_pos = torch.max(num_pos, torch.ones_like(num_pos))
-        return loss, num_pos
+        loss_conf   = torch.mean(self.BCELoss(conf, obj_mask.type_as(conf))[noobj_mask.bool() | obj_mask])
+        loss        += loss_conf * self.balance[l] * self.obj_ratio
+        # if n != 0:
+        #     print(loss_loc * self.box_ratio, loss_cls * self.cls_ratio, loss_conf * self.balance[l] * self.obj_ratio)
+        return loss
 
     def calculate_iou(self, _box_a, _box_b):
         #-----------------------------------------------------------#
@@ -362,6 +372,7 @@ class YOLOLoss(nn.Module):
         pred_boxes_w    = torch.unsqueeze(torch.exp(w) * anchor_w, -1)
         pred_boxes_h    = torch.unsqueeze(torch.exp(h) * anchor_h, -1)
         pred_boxes      = torch.cat([pred_boxes_x, pred_boxes_y, pred_boxes_w, pred_boxes_h], dim = -1)
+        
         for b in range(bs):           
             #-------------------------------------------------------#
             #   将预测结果转换一个形式
@@ -413,3 +424,40 @@ def weights_init(net, init_type='normal', init_gain = 0.02):
             torch.nn.init.constant_(m.bias.data, 0.0)
     print('initialize network with %s type' % init_type)
     net.apply(init_func)
+
+def get_lr_scheduler(lr_decay_type, lr, min_lr, total_iters, warmup_iters_ratio = 0.1, warmup_lr_ratio = 0.1, no_aug_iter_ratio = 0.3, step_num = 10):
+    def yolox_warm_cos_lr(lr, min_lr, total_iters, warmup_total_iters, warmup_lr_start, no_aug_iter, iters):
+        if iters <= warmup_total_iters:
+            # lr = (lr - warmup_lr_start) * iters / float(warmup_total_iters) + warmup_lr_start
+            lr = (lr - warmup_lr_start) * pow(iters / float(warmup_total_iters), 2) + warmup_lr_start
+        elif iters >= total_iters - no_aug_iter:
+            lr = min_lr
+        else:
+            lr = min_lr + 0.5 * (lr - min_lr) * (
+                1.0 + math.cos(math.pi* (iters - warmup_total_iters) / (total_iters - warmup_total_iters - no_aug_iter))
+            )
+        return lr
+
+    def step_lr(lr, decay_rate, step_size, iters):
+        if step_size < 1:
+            raise ValueError("step_size must above 1.")
+        n       = iters // step_size
+        out_lr  = lr * decay_rate ** n
+        return out_lr
+
+    if lr_decay_type == "cos":
+        warmup_total_iters  = min(max(warmup_iters_ratio * total_iters, 1), 3)
+        warmup_lr_start     = max(warmup_lr_ratio * lr, 1e-6)
+        no_aug_iter         = min(max(no_aug_iter_ratio * total_iters, 1), 15)
+        func = partial(yolox_warm_cos_lr ,lr, min_lr, total_iters, warmup_total_iters, warmup_lr_start, no_aug_iter)
+    else:
+        decay_rate  = (min_lr / lr) ** (1 / (step_num - 1))
+        step_size   = total_iters / step_num
+        func = partial(step_lr, lr, decay_rate, step_size)
+
+    return func
+
+def set_optimizer_lr(optimizer, lr_scheduler_func, epoch):
+    lr = lr_scheduler_func(epoch)
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr

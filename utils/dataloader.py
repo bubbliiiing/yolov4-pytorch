@@ -9,26 +9,31 @@ from utils.utils import cvtColor, preprocess_input
 
 
 class YoloDataset(Dataset):
-    def __init__(self, annotation_lines, input_shape, num_classes, mosaic, train):
+    def __init__(self, annotation_lines, input_shape, num_classes, epoch_length, mosaic, train, mosaic_ratio = 0.7):
         super(YoloDataset, self).__init__()
         self.annotation_lines   = annotation_lines
         self.input_shape        = input_shape
         self.num_classes        = num_classes
-        self.length             = len(self.annotation_lines)
+        self.epoch_length       = epoch_length
         self.mosaic             = mosaic
         self.train              = train
+        self.mosaic_ratio       = mosaic_ratio
+
+        self.epoch_now          = -1
+        self.length             = len(self.annotation_lines)
 
     def __len__(self):
         return self.length
 
     def __getitem__(self, index):
         index       = index % self.length
+
         #---------------------------------------------------#
         #   训练时进行数据的随机增强
         #   验证时不进行数据的随机增强
         #---------------------------------------------------#
         if self.mosaic:
-            if self.rand() < 0.5:
+            if self.rand() < 0.5 and self.epoch_now < self.epoch_length * self.mosaic_ratio:
                 lines = sample(self.annotation_lines, 3)
                 lines.append(self.annotation_lines[index])
                 shuffle(lines)
@@ -50,7 +55,7 @@ class YoloDataset(Dataset):
     def rand(self, a=0, b=1):
         return np.random.rand()*(b-a) + a
 
-    def get_random_data(self, annotation_line, input_shape, jitter=.3, hue=.1, sat=1.5, val=1.5, random=True):
+    def get_random_data(self, annotation_line, input_shape, jitter=.3, hue=.1, sat=0.7, val=0.4, random=True):
         line    = annotation_line.split()
         #------------------------------#
         #   读取图像并转换成RGB图像
@@ -101,7 +106,7 @@ class YoloDataset(Dataset):
         #------------------------------------------#
         #   对图像进行缩放并且进行长和宽的扭曲
         #------------------------------------------#
-        new_ar = w/h * self.rand(1-jitter,1+jitter) / self.rand(1-jitter,1+jitter)
+        new_ar = iw/ih * self.rand(1-jitter,1+jitter) / self.rand(1-jitter,1+jitter)
         scale = self.rand(.25, 2)
         if new_ar < 1:
             nh = int(scale*h)
@@ -126,22 +131,27 @@ class YoloDataset(Dataset):
         flip = self.rand()<.5
         if flip: image = image.transpose(Image.FLIP_LEFT_RIGHT)
 
-        #------------------------------------------#
-        #   色域扭曲
-        #------------------------------------------#
-        hue = self.rand(-hue, hue)
-        sat = self.rand(1, sat) if self.rand()<.5 else 1/self.rand(1, sat)
-        val = self.rand(1, val) if self.rand()<.5 else 1/self.rand(1, val)
-        x = cv2.cvtColor(np.array(image,np.float32)/255, cv2.COLOR_RGB2HSV)
-        x[..., 0] += hue*360
-        x[..., 0][x[..., 0]>1] -= 1
-        x[..., 0][x[..., 0]<0] += 1
-        x[..., 1] *= sat
-        x[..., 2] *= val
-        x[x[:,:, 0]>360, 0] = 360
-        x[:, :, 1:][x[:, :, 1:]>1] = 1
-        x[x<0] = 0
-        image_data = cv2.cvtColor(x, cv2.COLOR_HSV2RGB)*255
+        image_data      = np.array(image, np.uint8)
+        #---------------------------------#
+        #   对图像进行色域变换
+        #   计算色域变换的参数
+        #---------------------------------#
+        r               = np.random.uniform(-1, 1, 3) * [hue, sat, val] + 1
+        #---------------------------------#
+        #   将图像转到HSV上
+        #---------------------------------#
+        hue, sat, val   = cv2.split(cv2.cvtColor(image_data, cv2.COLOR_RGB2HSV))
+        dtype           = image_data.dtype
+        #---------------------------------#
+        #   应用变换
+        #---------------------------------#
+        x       = np.arange(0, 256, dtype=r.dtype)
+        lut_hue = ((x * r[0]) % 180).astype(dtype)
+        lut_sat = np.clip(x * r[1], 0, 255).astype(dtype)
+        lut_val = np.clip(x * r[2], 0, 255).astype(dtype)
+
+        image_data = cv2.merge((cv2.LUT(hue, lut_hue), cv2.LUT(sat, lut_sat), cv2.LUT(val, lut_val)))
+        image_data = cv2.cvtColor(image_data, cv2.COLOR_HSV2RGB)
 
         #---------------------------------#
         #   对真实框进行调整
@@ -206,52 +216,80 @@ class YoloDataset(Dataset):
                 merge_bbox.append(tmp_box)
         return merge_bbox
 
-    def get_random_data_with_Mosaic(self, annotation_line, input_shape, max_boxes=100, hue=.1, sat=1.5, val=1.5):
+    def get_random_data_with_Mosaic(self, annotation_line, input_shape, jitter=0.3, hue=.1, sat=0.7, val=0.4):
         h, w = input_shape
-        min_offset_x = self.rand(0.25, 0.75)
-        min_offset_y = self.rand(0.25, 0.75)
-
-        nws     = [ int(w * self.rand(0.4, 1)), int(w * self.rand(0.4, 1)), int(w * self.rand(0.4, 1)), int(w * self.rand(0.4, 1))]
-        nhs     = [ int(h * self.rand(0.4, 1)), int(h * self.rand(0.4, 1)), int(h * self.rand(0.4, 1)), int(h * self.rand(0.4, 1))]
-        
-        place_x = [int(w*min_offset_x) - nws[0], int(w*min_offset_x) - nws[1], int(w*min_offset_x), int(w*min_offset_x)]
-        place_y = [int(h*min_offset_y) - nhs[0], int(h*min_offset_y), int(h*min_offset_y), int(h*min_offset_y) - nhs[3]]
+        min_offset_x = self.rand(0.3, 0.7)
+        min_offset_y = self.rand(0.3, 0.7)
 
         image_datas = [] 
         box_datas   = []
         index       = 0
         for line in annotation_line:
-            # 每一行进行分割
+            #---------------------------------#
+            #   每一行进行分割
+            #---------------------------------#
             line_content = line.split()
-            # 打开图片
+            #---------------------------------#
+            #   打开图片
+            #---------------------------------#
             image = Image.open(line_content[0])
             image = cvtColor(image)
             
-            # 图片的大小
+            #---------------------------------#
+            #   图片的大小
+            #---------------------------------#
             iw, ih = image.size
-            # 保存框的位置
+            #---------------------------------#
+            #   保存框的位置
+            #---------------------------------#
             box = np.array([np.array(list(map(int,box.split(',')))) for box in line_content[1:]])
             
-            # 是否翻转图片
+            #---------------------------------#
+            #   是否翻转图片
+            #---------------------------------#
             flip = self.rand()<.5
             if flip and len(box)>0:
                 image = image.transpose(Image.FLIP_LEFT_RIGHT)
                 box[:, [0,2]] = iw - box[:, [2,0]]
 
-            nw = nws[index] 
-            nh = nhs[index] 
-            image = image.resize((nw,nh), Image.BICUBIC)
+            #------------------------------------------#
+            #   对图像进行缩放并且进行长和宽的扭曲
+            #------------------------------------------#
+            new_ar = iw/ih * self.rand(1-jitter,1+jitter) / self.rand(1-jitter,1+jitter)
+            scale = self.rand(.4, 1)
+            if new_ar < 1:
+                nh = int(scale*h)
+                nw = int(nh*new_ar)
+            else:
+                nw = int(scale*w)
+                nh = int(nw/new_ar)
+            image = image.resize((nw, nh), Image.BICUBIC)
 
-            # 将图片进行放置，分别对应四张分割图片的位置
-            dx = place_x[index]
-            dy = place_y[index]
+            #-----------------------------------------------#
+            #   将图片进行放置，分别对应四张分割图片的位置
+            #-----------------------------------------------#
+            if index == 0:
+                dx = int(w*min_offset_x) - nw
+                dy = int(h*min_offset_y) - nh
+            elif index == 1:
+                dx = int(w*min_offset_x) - nw
+                dy = int(h*min_offset_y)
+            elif index == 2:
+                dx = int(w*min_offset_x)
+                dy = int(h*min_offset_y)
+            elif index == 3:
+                dx = int(w*min_offset_x)
+                dy = int(h*min_offset_y) - nh
+            
             new_image = Image.new('RGB', (w,h), (128,128,128))
             new_image.paste(image, (dx, dy))
             image_data = np.array(new_image)
 
             index = index + 1
             box_data = []
-            # 对box进行重新处理
+            #---------------------------------#
+            #   对box进行重新处理
+            #---------------------------------#
             if len(box)>0:
                 np.random.shuffle(box)
                 box[:, [0,2]] = box[:, [0,2]]*nw/iw + dx
@@ -268,7 +306,9 @@ class YoloDataset(Dataset):
             image_datas.append(image_data)
             box_datas.append(box_data)
 
-        # 将图片分割，放在一起
+        #---------------------------------#
+        #   将图片分割，放在一起
+        #---------------------------------#
         cutx = int(w * min_offset_x)
         cuty = int(h * min_offset_y)
 
@@ -278,22 +318,31 @@ class YoloDataset(Dataset):
         new_image[cuty:, cutx:, :] = image_datas[2][cuty:, cutx:, :]
         new_image[:cuty, cutx:, :] = image_datas[3][:cuty, cutx:, :]
 
-        # 进行色域变换
-        hue = self.rand(-hue, hue)
-        sat = self.rand(1, sat) if self.rand()<.5 else 1/self.rand(1, sat)
-        val = self.rand(1, val) if self.rand()<.5 else 1/self.rand(1, val)
-        x = cv2.cvtColor(np.array(new_image/255,np.float32), cv2.COLOR_RGB2HSV)
-        x[..., 0] += hue*360
-        x[..., 0][x[..., 0]>1] -= 1
-        x[..., 0][x[..., 0]<0] += 1
-        x[..., 1] *= sat
-        x[..., 2] *= val
-        x[x[:, :, 0]>360, 0] = 360
-        x[:, :, 1:][x[:, :, 1:]>1] = 1
-        x[x<0] = 0
-        new_image = cv2.cvtColor(x, cv2.COLOR_HSV2RGB)*255
+        new_image       = np.array(new_image, np.uint8)
+        #---------------------------------#
+        #   对图像进行色域变换
+        #   计算色域变换的参数
+        #---------------------------------#
+        r               = np.random.uniform(-1, 1, 3) * [hue, sat, val] + 1
+        #---------------------------------#
+        #   将图像转到HSV上
+        #---------------------------------#
+        hue, sat, val   = cv2.split(cv2.cvtColor(new_image, cv2.COLOR_RGB2HSV))
+        dtype           = new_image.dtype
+        #---------------------------------#
+        #   应用变换
+        #---------------------------------#
+        x       = np.arange(0, 256, dtype=r.dtype)
+        lut_hue = ((x * r[0]) % 180).astype(dtype)
+        lut_sat = np.clip(x * r[1], 0, 255).astype(dtype)
+        lut_val = np.clip(x * r[2], 0, 255).astype(dtype)
 
-        # 对框进行进一步的处理
+        new_image = cv2.merge((cv2.LUT(hue, lut_hue), cv2.LUT(sat, lut_sat), cv2.LUT(val, lut_val)))
+        new_image = cv2.cvtColor(new_image, cv2.COLOR_HSV2RGB)
+
+        #---------------------------------#
+        #   对框进行进一步的处理
+        #---------------------------------#
         new_boxes = self.merge_bboxes(box_datas, cutx, cuty)
 
         return new_image, new_boxes
