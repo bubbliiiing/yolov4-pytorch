@@ -177,9 +177,21 @@ if __name__ == "__main__":
     #------------------------------------------------------------------#
     lr_decay_type       = "cos"
     #------------------------------------------------------------------#
+    #   focal_loss      是否使用Focal Loss平衡正负样本
+    #   alpha           Focal Loss的正负样本平衡参数
+    #   gamma           Focal Loss的难易分类样本平衡参数
+    #------------------------------------------------------------------#
+    focal_loss          = False
+    alpha               = 0.25
+    gamma               = 2
+    #------------------------------------------------------------------#
     #   save_period     多少个epoch保存一次权值，默认每个世代都保存
     #------------------------------------------------------------------#
     save_period         = 1
+    #------------------------------------------------------------------#
+    #   save_dir        权值与日志文件保存的文件夹
+    #------------------------------------------------------------------#
+    save_dir            = 'logs'
     #------------------------------------------------------------------#
     #   num_workers     用于设置是否使用多线程读取数据
     #                   开启后会加快数据读取速度，但是会占用更多内存
@@ -218,8 +230,8 @@ if __name__ == "__main__":
         model_dict.update(pretrained_dict)
         model.load_state_dict(model_dict)
 
-    yolo_loss    = YOLOLoss(anchors, num_classes, input_shape, Cuda, anchors_mask, label_smoothing)
-    loss_history = LossHistory("logs/", model, input_shape=input_shape)
+    yolo_loss    = YOLOLoss(anchors, num_classes, input_shape, Cuda, anchors_mask, label_smoothing, focal_loss, alpha, gamma)
+    loss_history = LossHistory(save_dir, model, input_shape=input_shape)
     
     model_train = model.train()
     if Cuda:
@@ -351,4 +363,4 @@ if __name__ == "__main__":
 
             set_optimizer_lr(optimizer, lr_scheduler_func, epoch)
 
-            fit_one_epoch(model_train, model, yolo_loss, loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, UnFreeze_Epoch, Cuda, save_period)
+            fit_one_epoch(model_train, model, yolo_loss, loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, UnFreeze_Epoch, Cuda, save_period, save_dir)
