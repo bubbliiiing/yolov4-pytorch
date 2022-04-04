@@ -26,9 +26,10 @@ class YOLOLoss(nn.Module):
         self.obj_ratio      = 5 * (input_shape[0] * input_shape[1]) / (416 ** 2)
         self.cls_ratio      = 1 * (num_classes / 80)
         
-        self.focal_loss     = focal_loss
-        self.alpha          = alpha
-        self.gamma          = gamma
+        self.focal_loss         = focal_loss
+        self.focal_loss_ratio   = 10
+        self.alpha              = alpha
+        self.gamma              = gamma
 
         self.ignore_threshold = 0.5
         self.cuda           = cuda
@@ -213,12 +214,12 @@ class YOLOLoss(nn.Module):
 
         if self.focal_loss:
             ratio       = torch.where(obj_mask, torch.ones_like(conf) * self.alpha, torch.ones_like(conf) * (1 - self.alpha)) * torch.where(obj_mask, torch.ones_like(conf) - conf, conf) ** self.gamma
-            loss_conf   = torch.mean((self.BCELoss(conf, obj_mask.type_as(conf)) * ratio)[noobj_mask.bool() | obj_mask])
+            loss_conf   = torch.mean((self.BCELoss(conf, obj_mask.type_as(conf)) * ratio)[noobj_mask.bool() | obj_mask]) * self.focal_loss_ratio
         else: 
             loss_conf   = torch.mean(self.BCELoss(conf, obj_mask.type_as(conf))[noobj_mask.bool() | obj_mask])
         loss        += loss_conf * self.balance[l] * self.obj_ratio
-        # if n != 0:
-        #     print(loss_loc * self.box_ratio, loss_cls * self.cls_ratio, loss_conf * self.balance[l] * self.obj_ratio)
+        if n != 0:
+            print(loss_loc * self.box_ratio, loss_cls * self.cls_ratio, loss_conf * self.balance[l] * self.obj_ratio)
         return loss
 
     def calculate_iou(self, _box_a, _box_b):

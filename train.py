@@ -179,7 +179,7 @@ if __name__ == "__main__":
     #   weight_decay    权值衰减，可防止过拟合
     #                   adam会导致weight_decay错误，使用adam时建议设置为0。
     #------------------------------------------------------------------#
-    optimizer_type      = "adamw"
+    optimizer_type      = "sgd"
     momentum            = 0.937
     weight_decay        = 5e-4
     #------------------------------------------------------------------#
