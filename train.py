@@ -188,12 +188,12 @@ if __name__ == "__main__":
     lr_decay_type       = "cos"
     #------------------------------------------------------------------#
     #   focal_loss      是否使用Focal Loss平衡正负样本
-    #   alpha           Focal Loss的正负样本平衡参数
-    #   gamma           Focal Loss的难易分类样本平衡参数
+    #   focal_alpha     Focal Loss的正负样本平衡参数
+    #   focal_gamma     Focal Loss的难易分类样本平衡参数
     #------------------------------------------------------------------#
     focal_loss          = False
-    alpha               = 0.25
-    gamma               = 2
+    focal_alpha         = 0.25
+    focal_gamma         = 2
     #------------------------------------------------------------------#
     #   save_period     多少个epoch保存一次权值，默认每个世代都保存
     #------------------------------------------------------------------#
@@ -240,7 +240,7 @@ if __name__ == "__main__":
         model_dict.update(pretrained_dict)
         model.load_state_dict(model_dict)
 
-    yolo_loss    = YOLOLoss(anchors, num_classes, input_shape, Cuda, anchors_mask, label_smoothing, focal_loss, alpha, gamma)
+    yolo_loss    = YOLOLoss(anchors, num_classes, input_shape, Cuda, anchors_mask, label_smoothing, focal_loss, focal_alpha, focal_gamma)
     loss_history = LossHistory(save_dir, model, input_shape=input_shape)
     
     model_train = model.train()
