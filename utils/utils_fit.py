@@ -6,7 +6,7 @@ from tqdm import tqdm
 from utils.utils import get_lr
 
 
-def fit_one_epoch(model_train, model, yolo_loss, loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, cuda, save_period, save_dir):
+def fit_one_epoch(model_train, model, yolo_loss, loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, cuda, fp16, scaler, save_period, save_dir):
     loss        = 0
     val_loss    = 0
 
@@ -29,25 +29,49 @@ def fit_one_epoch(model_train, model, yolo_loss, loss_history, optimizer, epoch,
             #   清零梯度
             #----------------------#
             optimizer.zero_grad()
-            #----------------------#
-            #   前向传播
-            #----------------------#
-            outputs         = model_train(images)
+            if not fp16:
+                #----------------------#
+                #   前向传播
+                #----------------------#
+                outputs         = model_train(images)
 
-            loss_value_all  = 0
-            #----------------------#
-            #   计算损失
-            #----------------------#
-            for l in range(len(outputs)):
-                loss_item = yolo_loss(l, outputs[l], targets)
-                loss_value_all  += loss_item
-            loss_value = loss_value_all
+                loss_value_all  = 0
+                #----------------------#
+                #   计算损失
+                #----------------------#
+                for l in range(len(outputs)):
+                    loss_item = yolo_loss(l, outputs[l], targets)
+                    loss_value_all  += loss_item
+                loss_value = loss_value_all
 
-            #----------------------#
-            #   反向传播
-            #----------------------#
-            loss_value.backward()
-            optimizer.step()
+                #----------------------#
+                #   反向传播
+                #----------------------#
+                loss_value.backward()
+                optimizer.step()
+            else:
+                from torch.cuda.amp import autocast
+                with autocast():
+                    #----------------------#
+                    #   前向传播
+                    #----------------------#
+                    outputs         = model_train(images)
+
+                    loss_value_all  = 0
+                    #----------------------#
+                    #   计算损失
+                    #----------------------#
+                    for l in range(len(outputs)):
+                        loss_item = yolo_loss(l, outputs[l], targets)
+                        loss_value_all  += loss_item
+                    loss_value = loss_value_all
+
+                #----------------------#
+                #   反向传播
+                #----------------------#
+                scaler.scale(loss_value).backward()
+                scaler.step(optimizer)
+                scaler.update()
 
             loss += loss_value.item()
             
