@@ -203,8 +203,10 @@ class YOLOLoss(nn.Module):
         n           = torch.sum(obj_mask)
         if n != 0:
             #---------------------------------------------------------------#
-            #   计算预测结果和真实结果的ciou
-            #----------------------------------------------------------------#
+            #   计算预测结果和真实结果的差距
+            #   loss_loc ciou回归损失
+            #   loss_cls 分类损失
+            #---------------------------------------------------------------#
             ciou        = self.box_ciou(pred_boxes, y_true[..., :4])
             # loss_loc    = torch.mean((1 - ciou)[obj_mask] * box_loss_scale[obj_mask])
             loss_loc    = torch.mean((1 - ciou)[obj_mask])
@@ -212,9 +214,13 @@ class YOLOLoss(nn.Module):
             loss_cls    = torch.mean(self.BCELoss(pred_cls[obj_mask], y_true[..., 5:][obj_mask]))
             loss        += loss_loc * self.box_ratio + loss_cls * self.cls_ratio
 
+        #---------------------------------------------------------------#
+        #   计算是否包含物体的置信度损失
+        #---------------------------------------------------------------#
         if self.focal_loss:
-            ratio       = torch.where(obj_mask, torch.ones_like(conf) * self.alpha, torch.ones_like(conf) * (1 - self.alpha)) * torch.where(obj_mask, torch.ones_like(conf) - conf, conf) ** self.gamma
-            loss_conf   = torch.mean((self.BCELoss(conf, obj_mask.type_as(conf)) * ratio)[noobj_mask.bool() | obj_mask]) * self.focal_loss_ratio
+            pos_neg_ratio   = torch.where(obj_mask, torch.ones_like(conf) * self.alpha, torch.ones_like(conf) * (1 - self.alpha)) 
+            hard_easy_ratio = torch.where(obj_mask, torch.ones_like(conf) - conf, conf) ** self.gamma
+            loss_conf   = torch.mean((self.BCELoss(conf, obj_mask.type_as(conf)) * pos_neg_ratio * hard_easy_ratio)[noobj_mask.bool() | obj_mask]) * self.focal_loss_ratio
         else: 
             loss_conf   = torch.mean(self.BCELoss(conf, obj_mask.type_as(conf))[noobj_mask.bool() | obj_mask])
         loss        += loss_conf * self.balance[l] * self.obj_ratio
@@ -434,7 +440,7 @@ def weights_init(net, init_type='normal', init_gain = 0.02):
     print('initialize network with %s type' % init_type)
     net.apply(init_func)
 
-def get_lr_scheduler(lr_decay_type, lr, min_lr, total_iters, warmup_iters_ratio = 0.1, warmup_lr_ratio = 0.1, no_aug_iter_ratio = 0.3, step_num = 10):
+def get_lr_scheduler(lr_decay_type, lr, min_lr, total_iters, warmup_iters_ratio = 0.05, warmup_lr_ratio = 0.1, no_aug_iter_ratio = 0.05, step_num = 10):
     def yolox_warm_cos_lr(lr, min_lr, total_iters, warmup_total_iters, warmup_lr_start, no_aug_iter, iters):
         if iters <= warmup_total_iters:
             # lr = (lr - warmup_lr_start) * iters / float(warmup_total_iters) + warmup_lr_start
