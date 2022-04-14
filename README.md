@@ -14,6 +14,8 @@
 10. [参考资料 Reference](#Reference)
 
 ## Top News
+**`2022-04`**:**支持多GPU训练，新增各个种类目标数量计算，新增heatmap。**  
+
 **`2022-03`**:**进行了大幅度的更新，修改了loss组成，使得分类、目标、回归loss的比例合适、支持step、cos学习率下降法、支持adam、sgd优化器选择、支持学习率根据batch_size自适应调整、新增图片裁剪。**  
 BiliBili视频中的原仓库地址为：https://github.com/bubbliiiing/yolov4-pytorch/tree/bilibili
 
