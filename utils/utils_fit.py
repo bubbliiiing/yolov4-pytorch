@@ -21,11 +21,8 @@ def fit_one_epoch(model_train, model, yolo_loss, loss_history, optimizer, epoch,
         images, targets = batch[0], batch[1]
         with torch.no_grad():
             if cuda:
-                images  = torch.from_numpy(images).type(torch.FloatTensor).cuda()
-                targets = [torch.from_numpy(ann).type(torch.FloatTensor).cuda() for ann in targets]
-            else:
-                images  = torch.from_numpy(images).type(torch.FloatTensor)
-                targets = [torch.from_numpy(ann).type(torch.FloatTensor) for ann in targets]
+                images  = images.cuda()
+                targets = [ann.cuda() for ann in targets]
         #----------------------#
         #   清零梯度
         #----------------------#
@@ -94,11 +91,8 @@ def fit_one_epoch(model_train, model, yolo_loss, loss_history, optimizer, epoch,
         images, targets = batch[0], batch[1]
         with torch.no_grad():
             if cuda:
-                images  = torch.from_numpy(images).type(torch.FloatTensor).cuda()
-                targets = [torch.from_numpy(ann).type(torch.FloatTensor).cuda() for ann in targets]
-            else:
-                images  = torch.from_numpy(images).type(torch.FloatTensor)
-                targets = [torch.from_numpy(ann).type(torch.FloatTensor) for ann in targets]
+                images  = images.cuda()
+                targets = [ann.cuda() for ann in targets]
             #----------------------#
             #   清零梯度
             #----------------------#
