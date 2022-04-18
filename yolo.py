@@ -304,7 +304,7 @@ class YOLO(object):
             b, c, h, w = np.shape(sub_output)
             sub_output = np.transpose(np.reshape(sub_output, [b, 3, -1, h, w]), [0, 3, 4, 1, 2])[0]
             score      = np.max(sigmoid(sub_output[..., 4]), -1)
-            score      = cv2.resize(score, (image.size[1], image.size[0]))
+            score      = cv2.resize(score, (image.size[0], image.size[1]))
             normed_score    = (score * 255).astype('uint8')
             mask            = np.maximum(mask, normed_score)
             
