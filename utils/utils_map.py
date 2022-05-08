@@ -296,7 +296,10 @@ def get_map(MINOVERLAP, draw_plot, score_threhold=0.5, path = './map_out'):
     else:
         os.makedirs(RESULTS_FILES_PATH)
     if draw_plot:
-        matplotlib.use('TkAgg')
+        try:
+            matplotlib.use('TkAgg')
+        except:
+            pass
         os.makedirs(os.path.join(RESULTS_FILES_PATH, "AP"))
         os.makedirs(os.path.join(RESULTS_FILES_PATH, "F1"))
         os.makedirs(os.path.join(RESULTS_FILES_PATH, "Recall"))
