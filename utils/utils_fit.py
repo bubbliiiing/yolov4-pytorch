@@ -6,7 +6,7 @@ from tqdm import tqdm
 from utils.utils import get_lr
 
 
-def fit_one_epoch(model_train, model, yolo_loss, loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, cuda, fp16, scaler, save_period, save_dir, local_rank=0):
+def fit_one_epoch(model_train, model, yolo_loss, loss_history, eval_callback, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, Epoch, cuda, fp16, scaler, save_period, save_dir, local_rank=0):
     loss        = 0
     val_loss    = 0
 
@@ -120,6 +120,7 @@ def fit_one_epoch(model_train, model, yolo_loss, loss_history, optimizer, epoch,
         pbar.close()
         print('Finish Validation')
         loss_history.append_loss(epoch + 1, loss / epoch_step, val_loss / epoch_step_val)
+        eval_callback.on_epoch_end(epoch + 1, model_train)
         print('Epoch:'+ str(epoch + 1) + '/' + str(Epoch))
         print('Total Loss: %.3f || Val Loss: %.3f ' % (loss / epoch_step, val_loss / epoch_step_val))
         

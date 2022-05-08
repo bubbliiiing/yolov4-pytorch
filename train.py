@@ -1,6 +1,7 @@
 #-------------------------------------#
 #       对数据集进行训练
 #-------------------------------------#
+import datetime
 import os
 
 import numpy as np
@@ -9,12 +10,13 @@ import torch.backends.cudnn as cudnn
 import torch.distributed as dist
 import torch.nn as nn
 import torch.optim as optim
+from torch import nn
 from torch.utils.data import DataLoader
 
 from nets.yolo import YoloBody
 from nets.yolo_training import (YOLOLoss, get_lr_scheduler, set_optimizer_lr,
                                 weights_init)
-from utils.callbacks import LossHistory
+from utils.callbacks import EvalCallback, LossHistory
 from utils.dataloader import YoloDataset, yolo_dataset_collate
 from utils.utils import get_anchors, get_classes, show_config
 from utils.utils_fit import fit_one_epoch
@@ -224,6 +226,17 @@ if __name__ == "__main__":
     #------------------------------------------------------------------#
     save_dir            = 'logs'
     #------------------------------------------------------------------#
+    #   eval_flag       是否在训练时进行评估，评估对象为验证集
+    #                   安装pycocotools库后，评估体验更佳。
+    #   eval_period     代表多少个epoch评估一次，不建议频繁的评估
+    #                   评估需要消耗较多的时间，频繁评估会导致训练非常慢
+    #   此处获得的mAP会与get_map.py获得的会有所不同，原因有二：
+    #   （一）此处获得的mAP为验证集的mAP。
+    #   （二）此处设置评估参数较为保守，目的是加快评估速度。
+    #------------------------------------------------------------------#
+    eval_flag           = True
+    eval_period         = 10
+    #------------------------------------------------------------------#
     #   num_workers     用于设置是否使用多线程读取数据
     #                   开启后会加快数据读取速度，但是会占用更多内存
     #                   内存较小的电脑可以设置为2或者0  
@@ -302,9 +315,11 @@ if __name__ == "__main__":
     #   记录Loss
     #----------------------#
     if local_rank == 0:
-        loss_history = LossHistory(save_dir, model, input_shape=input_shape)
+        time_str        = datetime.datetime.strftime(datetime.datetime.now(),'%Y_%m_%d_%H_%M_%S')
+        log_dir         = os.path.join(save_dir, "loss_" + str(time_str))
+        loss_history    = LossHistory(log_dir, model, input_shape=input_shape)
     else:
-        loss_history = None
+        loss_history    = None
         
     #------------------------------------------------------------------#
     #   torch 1.2不支持amp，建议使用torch 1.7.1及以上正确使用fp16
@@ -453,6 +468,15 @@ if __name__ == "__main__":
         gen_val         = DataLoader(val_dataset  , shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=True, 
                                     drop_last=True, collate_fn=yolo_dataset_collate, sampler=val_sampler)
 
+        #----------------------#
+        #   记录eval的map曲线
+        #----------------------#
+        if local_rank == 0:
+            eval_callback   = EvalCallback(model, input_shape, anchors, anchors_mask, class_names, num_classes, val_lines, log_dir, Cuda, \
+                                            eval_flag=eval_flag, period=eval_period)
+        else:
+            eval_callback   = None
+        
         #---------------------------------------#
         #   开始模型训练
         #---------------------------------------#
@@ -504,7 +528,10 @@ if __name__ == "__main__":
 
             set_optimizer_lr(optimizer, lr_scheduler_func, epoch)
 
-            fit_one_epoch(model_train, model, yolo_loss, loss_history, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, UnFreeze_Epoch, Cuda, fp16, scaler, save_period, save_dir, local_rank)
-            
+            fit_one_epoch(model_train, model, yolo_loss, loss_history, eval_callback, optimizer, epoch, epoch_step, epoch_step_val, gen, gen_val, UnFreeze_Epoch, Cuda, fp16, scaler, save_period, save_dir, local_rank)
+                        
+            if distributed:
+                dist.barrier()
+
         if local_rank == 0:
             loss_history.writer.close()
