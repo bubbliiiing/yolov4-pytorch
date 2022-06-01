@@ -357,7 +357,12 @@ class YoloDataset(Dataset):
 
     def get_random_data_with_MixUp(self, image_1, box_1, image_2, box_2):
         new_image = np.array(image_1, np.float32) * 0.5 + np.array(image_2, np.float32) * 0.5
-        new_boxes = np.concatenate([box_1, box_2], axis=0)
+        if len(box_1) == 0:
+            new_boxes = box_2
+        elif len(box_2) == 0:
+            new_boxes = box_1
+        else:
+            new_boxes = np.concatenate([box_1, box_2], axis=0)
         return new_image, new_boxes
 
 # DataLoader中collate_fn使用
