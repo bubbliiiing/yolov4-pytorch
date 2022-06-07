@@ -389,6 +389,8 @@ if __name__ == "__main__":
         wanted_step = 5e4 if optimizer_type == "sgd" else 1.5e4
         total_step  = num_train // Unfreeze_batch_size * UnFreeze_Epoch
         if total_step <= wanted_step:
+            if num_train // Unfreeze_batch_size == 0:
+                raise ValueError('数据集过小，无法进行训练，请扩充数据集。')
             wanted_epoch = wanted_step // (num_train // Unfreeze_batch_size) + 1
             print("\n\033[1;33;44m[Warning] 使用%s优化器时，建议将训练总步长设置到%d以上。\033[0m"%(optimizer_type, wanted_step))
             print("\033[1;33;44m[Warning] 本次运行的总训练数据量为%d，Unfreeze_batch_size为%d，共训练%d个Epoch，计算出总训练步长为%d。\033[0m"%(num_train, Unfreeze_batch_size, UnFreeze_Epoch, total_step))
