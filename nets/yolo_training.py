@@ -51,7 +51,7 @@ class YOLOLoss(nn.Module):
         output  = - target * torch.log(pred) - (1.0 - target) * torch.log(1.0 - pred)
         return output
         
-    def box_iou(self, b1, b2):
+    def box_iou(self, b1, b2, obj_mask):
         """
         输入为：
         ----------
@@ -115,7 +115,7 @@ class YOLOLoss(nn.Module):
             ciou                = iou - 1.0 * (center_distance) / torch.clamp(enclose_diagonal, min = 1e-6)
             
             v       = (4 / (math.pi ** 2)) * torch.pow((torch.atan(b1_wh[..., 0] / torch.clamp(b1_wh[..., 1],min = 1e-6)) - torch.atan(b2_wh[..., 0] / torch.clamp(b2_wh[..., 1], min = 1e-6))), 2)
-            alpha   = v / torch.clamp((1.0 - iou + v), min=1e-6)
+            alpha   = v / torch.clamp((1.0 - iou + v), min = 1e-6)
             out     = ciou - alpha * v
             
         elif self.iou_type == 'siou':
@@ -130,8 +130,8 @@ class YOLOLoss(nn.Module):
             #----------------------------------------------------#
             #   求h和w方向上的sin比值
             #----------------------------------------------------#
-            sin_alpha_1 = torch.abs(center_wh[..., 0]) / sigma
-            sin_alpha_2 = torch.abs(center_wh[..., 1]) / sigma
+            sin_alpha_1 = torch.clamp(torch.abs(center_wh[..., 0]) / torch.clamp(sigma, min = 1e-6), min = 0, max = 1)
+            sin_alpha_2 = torch.clamp(torch.abs(center_wh[..., 1]) / torch.clamp(sigma, min = 1e-6), min = 0, max = 1)
             
             #----------------------------------------------------#
             #   求门限，二分之根号二，0.707
@@ -140,29 +140,31 @@ class YOLOLoss(nn.Module):
             #----------------------------------------------------#
             threshold   = pow(2, 0.5) / 2
             sin_alpha   = torch.where(sin_alpha_1 > threshold, sin_alpha_2, sin_alpha_1)
-            angle_cost  = torch.cos(torch.arcsin(sin_alpha) * 2 - math.pi / 2)
-            
+
+            #----------------------------------------------------#
+            #   alpha越接近于45°，angle_cost越接近于1，gamma越接近于1
+            #   alpha越接近于0°，angle_cost越接近于0，gamma越接近于2
+            #----------------------------------------------------#
+            angle_cost  = torch.cos(torch.asin(sin_alpha) * 2 - math.pi / 2)
+            gamma       = 2 - angle_cost
+
             #----------------------------------------------------#
             #   Distance cost
-            #   alpha越接近于45°，gamma值越大，此时distance_cost越大
-            #   alpha越接近于0°，gamma值越小，此时distance_cost越小
             #   求中心与外包围举行高宽的比值
             #----------------------------------------------------#
-            gamma = 2 - angle_cost
-            rho_x = (center_wh[..., 0] / enclose_wh[..., 0]) ** 2
-            rho_y = (center_wh[..., 1] / enclose_wh[..., 1]) ** 2
-            distance_cost = 2 - torch.exp(-gamma * rho_x) - torch.exp(-gamma * rho_y)
+            rho_x           = (center_wh[..., 0] / torch.clamp(enclose_wh[..., 0], min = 1e-6)) ** 2
+            rho_y           = (center_wh[..., 1] / torch.clamp(enclose_wh[..., 1], min = 1e-6)) ** 2
+            distance_cost   = 2 - torch.exp(-gamma * rho_x) - torch.exp(-gamma * rho_y)
             
             #----------------------------------------------------#
             #   Shape cost
             #   真实框与预测框的宽高差异与最大值的比值
             #   差异越小，costshape_cost越小
             #----------------------------------------------------#
-            omiga_w = torch.abs(b1_wh[..., 0] - b2_wh[..., 0]) / torch.max(b1_wh[..., 0], b2_wh[..., 0])
-            omiga_h = torch.abs(b1_wh[..., 1] - b2_wh[..., 1]) / torch.max(b1_wh[..., 1], b2_wh[..., 1])
-            shape_cost = torch.pow(1 - torch.exp(-1 * omiga_w), 4) + torch.pow(1 - torch.exp(-1 * omiga_h), 4)
-            out = iou - 0.5 * (distance_cost + shape_cost)
-
+            omiga_w     = torch.abs(b1_wh[..., 0] - b2_wh[..., 0]) / torch.clamp(torch.max(b1_wh[..., 0], b2_wh[..., 0]), min = 1e-6)
+            omiga_h     = torch.abs(b1_wh[..., 1] - b2_wh[..., 1]) / torch.clamp(torch.max(b1_wh[..., 1], b2_wh[..., 1]), min = 1e-6)
+            shape_cost  = torch.pow(1 - torch.exp(-1 * omiga_w), 4) + torch.pow(1 - torch.exp(-1 * omiga_h), 4)
+            out         = iou - 0.5 * (distance_cost + shape_cost)
         return out 
 
     #---------------------------------------------------#
@@ -261,7 +263,7 @@ class YOLOLoss(nn.Module):
             #   loss_loc iou回归损失
             #   loss_cls 分类损失
             #---------------------------------------------------------------#
-            iou         = self.box_iou(pred_boxes, y_true[..., :4]).type_as(x)
+            iou         = self.box_iou(pred_boxes, y_true[..., :4], obj_mask).type_as(x)
             # loss_loc    = torch.mean((1 - iou)[obj_mask] * box_loss_scale[obj_mask])
             loss_loc    = torch.mean((1 - iou)[obj_mask])
             
