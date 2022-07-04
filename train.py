@@ -229,6 +229,10 @@ if __name__ == "__main__":
     focal_alpha         = 0.25
     focal_gamma         = 2
     #------------------------------------------------------------------#
+    #   iou_type        使用什么iou损失，ciou或者siou
+    #------------------------------------------------------------------#
+    iou_type            = 'ciou'
+    #------------------------------------------------------------------#
     #   save_period     多少个epoch保存一次权值
     #------------------------------------------------------------------#
     save_period         = 10
@@ -321,7 +325,7 @@ if __name__ == "__main__":
     #----------------------#
     #   获得损失函数
     #----------------------#
-    yolo_loss    = YOLOLoss(anchors, num_classes, input_shape, Cuda, anchors_mask, label_smoothing, focal_loss, focal_alpha, focal_gamma)
+    yolo_loss    = YOLOLoss(anchors, num_classes, input_shape, Cuda, anchors_mask, label_smoothing, focal_loss, focal_alpha, focal_gamma, iou_type)
     #----------------------#
     #   记录Loss
     #----------------------#
