@@ -125,7 +125,7 @@ class YOLOLoss(nn.Module):
             #----------------------------------------------------#
             #   计算中心的距离
             #----------------------------------------------------#
-            sigma       = torch.pow(center_wh[..., 0] ** 2 + center_wh[..., 1] ** 2, 0.5)
+            sigma       = torch.pow(torch.sum(torch.pow(center_wh, 2), axis=-1), 0.5)
             
             #----------------------------------------------------#
             #   求h和w方向上的sin比值
@@ -264,8 +264,9 @@ class YOLOLoss(nn.Module):
             #   loss_cls 分类损失
             #---------------------------------------------------------------#
             iou         = self.box_iou(pred_boxes, y_true[..., :4]).type_as(x)
-            # loss_loc    = torch.mean((1 - iou)[obj_mask] * box_loss_scale[obj_mask])
+            obj_mask    = obj_mask & torch.logical_not(torch.isnan(iou))
             loss_loc    = torch.mean((1 - iou)[obj_mask])
+            # loss_loc    = torch.mean((1 - iou)[obj_mask] * box_loss_scale[obj_mask])
             
             loss_cls    = torch.mean(self.BCELoss(pred_cls[obj_mask], y_true[..., 5:][obj_mask]))
             loss        += loss_loc * self.box_ratio + loss_cls * self.cls_ratio

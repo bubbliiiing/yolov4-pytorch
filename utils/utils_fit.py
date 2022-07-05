@@ -60,7 +60,9 @@ def fit_one_epoch(model_train, model, yolo_loss, loss_history, eval_callback, op
                 #   计算损失
                 #----------------------#
                 for l in range(len(outputs)):
-                    loss_item = yolo_loss(l, outputs[l], targets)
+                    with torch.cuda.amp.autocast(enabled=False):
+                        predication = outputs[l].float()
+                    loss_item = yolo_loss(l, predication, targets)
                     loss_value_all  += loss_item
                 loss_value = loss_value_all
 
