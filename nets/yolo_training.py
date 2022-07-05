@@ -51,7 +51,7 @@ class YOLOLoss(nn.Module):
         output  = - target * torch.log(pred) - (1.0 - target) * torch.log(1.0 - pred)
         return output
         
-    def box_iou(self, b1, b2, obj_mask):
+    def box_iou(self, b1, b2):
         """
         输入为：
         ----------
@@ -263,7 +263,7 @@ class YOLOLoss(nn.Module):
             #   loss_loc iou回归损失
             #   loss_cls 分类损失
             #---------------------------------------------------------------#
-            iou         = self.box_iou(pred_boxes, y_true[..., :4], obj_mask).type_as(x)
+            iou         = self.box_iou(pred_boxes, y_true[..., :4]).type_as(x)
             # loss_loc    = torch.mean((1 - iou)[obj_mask] * box_loss_scale[obj_mask])
             loss_loc    = torch.mean((1 - iou)[obj_mask])
             
