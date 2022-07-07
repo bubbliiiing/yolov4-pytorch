@@ -71,6 +71,7 @@ class YOLO(object):
         self.__dict__.update(self._defaults)
         for name, value in kwargs.items():
             setattr(self, name, value)
+            setattr(self._defaults, name, value)  
             
         #---------------------------------------------------#
         #   获得种类和先验框的数量
