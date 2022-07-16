@@ -149,7 +149,7 @@ class EvalCallback():
             top_conf    = results[0][:, 4] * results[0][:, 5]
             top_boxes   = results[0][:, :4]
 
-        top_100     = np.argsort(top_label)[::-1][:self.max_boxes]
+        top_100     = np.argsort(top_conf)[::-1][:self.max_boxes]
         top_boxes   = top_boxes[top_100]
         top_conf    = top_conf[top_100]
         top_label   = top_label[top_100]
