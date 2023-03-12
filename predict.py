@@ -8,10 +8,9 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from yolo import YOLO
+from yolo import YOLO, YOLO_ONNX
 
 if __name__ == "__main__":
-    yolo = YOLO()
     #----------------------------------------------------------------------------------------------------------#
     #   mode用于指定测试的模式：
     #   'predict'           表示单张图片预测，如果想对预测过程进行修改，如保存图片，截取对象等，可以先看下方详细的注释
@@ -20,6 +19,7 @@ if __name__ == "__main__":
     #   'dir_predict'       表示遍历文件夹进行检测并保存。默认遍历img文件夹，保存img_out文件夹，详情查看下方注释。
     #   'heatmap'           表示进行预测结果的热力图可视化，详情查看下方注释。
     #   'export_onnx'       表示将模型导出为onnx，需要pytorch1.7.1以上。
+    #   'predict_onnx'      表示利用导出的onnx模型进行预测，相关参数的修改在yolo.py_416行左右处的YOLO_ONNX
     #----------------------------------------------------------------------------------------------------------#
     mode = "predict"
     #-------------------------------------------------------------------------#
@@ -70,6 +70,11 @@ if __name__ == "__main__":
     #-------------------------------------------------------------------------#
     simplify        = True
     onnx_save_path  = "model_data/models.onnx"
+
+    if mode != "predict_onnx":
+        yolo = YOLO()
+    else:
+        yolo = YOLO_ONNX()
 
     if mode == "predict":
         '''
@@ -171,6 +176,17 @@ if __name__ == "__main__":
                 
     elif mode == "export_onnx":
         yolo.convert_to_onnx(simplify, onnx_save_path)
-        
+
+    elif mode == "predict_onnx":
+        while True:
+            img = input('Input image filename:')
+            try:
+                image = Image.open(img)
+            except:
+                print('Open Error! Try again!')
+                continue
+            else:
+                r_image = yolo.detect_image(image)
+                r_image.show()
     else:
         raise AssertionError("Please specify the correct mode: 'predict', 'video', 'fps', 'heatmap', 'export_onnx', 'dir_predict'.")
