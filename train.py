@@ -18,7 +18,7 @@ from nets.yolo_training import (YOLOLoss, get_lr_scheduler, set_optimizer_lr,
                                 weights_init)
 from utils.callbacks import EvalCallback, LossHistory
 from utils.dataloader import YoloDataset, yolo_dataset_collate
-from utils.utils import get_anchors, get_classes, show_config, seed_everything, seed_everything_wrap
+from utils.utils import get_anchors, get_classes, show_config, seed_everything
 from utils.utils_fit import fit_one_epoch
 
 '''
@@ -489,9 +489,9 @@ if __name__ == "__main__":
             shuffle         = True
 
         gen             = DataLoader(train_dataset, shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=True,
-                                    drop_last=True, collate_fn=yolo_dataset_collate, sampler=train_sampler)
+                                    drop_last=True, collate_fn=yolo_dataset_collate, sampler=train_sampler, worker_init_fn=seed_everything(seed))
         gen_val         = DataLoader(val_dataset  , shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=True, 
-                                    drop_last=True, collate_fn=yolo_dataset_collate, sampler=val_sampler)
+                                    drop_last=True, collate_fn=yolo_dataset_collate, sampler=val_sampler, worker_init_fn=seed_everything(seed))
 
         #----------------------#
         #   记录eval的map曲线
@@ -539,9 +539,9 @@ if __name__ == "__main__":
                     batch_size = batch_size // ngpus_per_node
                     
                 gen             = DataLoader(train_dataset, shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=True,
-                                            drop_last=True, collate_fn=yolo_dataset_collate, sampler=train_sampler, worker_init_fn=seed_everything_wrap(seed))
+                                            drop_last=True, collate_fn=yolo_dataset_collate, sampler=train_sampler, worker_init_fn=seed_everything(seed))
                 gen_val         = DataLoader(val_dataset  , shuffle = shuffle, batch_size = batch_size, num_workers = num_workers, pin_memory=True, 
-                                            drop_last=True, collate_fn=yolo_dataset_collate, sampler=val_sampler, worker_init_fn=seed_everything_wrap(seed))
+                                            drop_last=True, collate_fn=yolo_dataset_collate, sampler=val_sampler, worker_init_fn=seed_everything(seed))
 
                 UnFreeze_flag = True
 
