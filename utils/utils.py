@@ -72,6 +72,15 @@ def seed_everything(seed=11):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+#---------------------------------------------------#
+#   设置Dataloader的种子
+#---------------------------------------------------#
+def worker_init_fn(worker_id, rank, seed):
+    worker_seed = rank + seed
+    random.seed(worker_seed)
+    np.random.seed(worker_seed)
+    torch.manual_seed(seed)
+
 def preprocess_input(image):
     image /= 255.0
     return image
