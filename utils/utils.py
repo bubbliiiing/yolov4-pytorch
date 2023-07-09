@@ -1,4 +1,7 @@
+import random
+
 import numpy as np
+import torch
 from PIL import Image
 
 #---------------------------------------------------------#
@@ -56,6 +59,32 @@ def get_anchors(anchors_path):
 def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']
+    
+#---------------------------------------------------#
+#   设置种子
+#---------------------------------------------------#
+def seed_everything(seed=11):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+#---------------------------------------------------#
+#   设置种子，用于进行设置Dataloader的初始化
+#---------------------------------------------------#
+def seed_everything_wrap(seed=11):
+    def _init_fn(worker_id):
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+    return _init_fn
 
 def preprocess_input(image):
     image /= 255.0

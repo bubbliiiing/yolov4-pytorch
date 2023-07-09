@@ -264,7 +264,10 @@ class YOLOLoss(nn.Module):
             #   loss_cls 分类损失
             #---------------------------------------------------------------#
             iou         = self.box_iou(pred_boxes, y_true[..., :4]).type_as(x)
-            obj_mask    = obj_mask & torch.logical_not(torch.isnan(iou))
+            try:
+                obj_mask    = obj_mask & torch.logical_not(torch.isnan(iou))
+            except:
+                obj_mask    = obj_mask & (~torch.isnan(iou))
             loss_loc    = torch.mean((1 - iou)[obj_mask])
             # loss_loc    = torch.mean((1 - iou)[obj_mask] * box_loss_scale[obj_mask])
             
