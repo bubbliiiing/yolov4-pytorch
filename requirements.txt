@@ -1,5 +1,5 @@
 scipy==1.2.1
-numpy==1.17.0
+numpy==1.22.0
 matplotlib==3.1.2
 opencv_python==4.1.2.30
 torch==1.2.0
